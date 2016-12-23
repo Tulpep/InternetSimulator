@@ -1,5 +1,7 @@
 ﻿using Microsoft.Owin.Hosting;
 using System;
+using System.Collections.Generic;
+using System.IO;
 
 namespace Tulpep.InternetSimulator
 {
@@ -13,16 +15,52 @@ namespace Tulpep.InternetSimulator
                 if (options.Verbose) Console.WriteLine("Filename: {0}", options.InputFile);
             }
 
-            StartWebServer("http://localhost:8080");
+
+            string hostFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), @"drivers\etc\hosts");
+            string hostFileBackup = hostFile + "_Backup_Internet_Simulator";
+
+            List<string> hostModifications = new List<string>();
+            hostModifications.Add("microsoft.com");
+
+            BackupHostFile(options, hostFile, hostFileBackup);
+            ModifyHostFile(options, hostFile, hostModifications);
+            StartWebServer("http://localhost:8080", options);
+            RestoreHostFile(options, hostFile, hostFileBackup);
         }
 
-        static void StartWebServer(string baseUri)
+        static void StartWebServer(string baseUri, Options options)
         {
-
-            Console.WriteLine("Starting web Server...");
+            if (options.Verbose) Console.WriteLine("Starting web Server...");
             WebApp.Start<WebServerStartup>(baseUri);
             Console.WriteLine("Server running at {0} - press Enter to quit. ", baseUri);
             Console.ReadLine();
+        }
+
+        static void BackupHostFile(Options options, string originalPath, string backupPath)
+        {
+            if (options.Verbose) Console.WriteLine("Creating backup of HOSTS file in " + originalPath);
+            File.Copy(originalPath, backupPath, true);
+        }
+
+        static void RestoreHostFile(Options options, string originalPath, string backupPath)
+        {
+            if (options.Verbose) Console.WriteLine("Restoring backup of HOSTS file to " + originalPath);
+            File.Copy(backupPath, originalPath, true);
+            if (options.Verbose) Console.WriteLine("Deleting backup file in " + backupPath);
+            File.Delete(backupPath);
+        }
+
+        static void ModifyHostFile(Options options, string hostFilePath, IEnumerable<string> hostModifications)
+        {
+            using (StreamWriter writer = File.AppendText(hostFilePath))
+            {
+                foreach (string entry in hostModifications)
+                {
+                    if (options.Verbose) Console.WriteLine(String.Format("Adding domain {0} to HOSTS file", entry));
+                    writer.WriteLine(String.Format("{0}\t{1}", "127.0.0.1", entry));
+                }
+
+            }
         }
 
     }
