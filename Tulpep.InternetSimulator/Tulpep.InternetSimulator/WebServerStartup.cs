@@ -3,7 +3,7 @@ using System.Web.Http;
 
 namespace Tulpep.InternetSimulator
 {
-    class Startup
+    class WebServerStartup
     {
         public void Configuration(IAppBuilder appBuilder)
         {
