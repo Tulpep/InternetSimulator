@@ -1,19 +1,20 @@
 ﻿using Owin;
-using System;
+using System.Web.Http;
 
 namespace Tulpep.InternetSimulator
 {
     class Startup
     {
-        public void Configuration(IAppBuilder app)
+        public void Configuration(IAppBuilder appBuilder)
         {
-            app.Use(async (ctx, next) =>
-            {
-                string url = ctx.Request.Host.ToString() + ctx.Request.Path.ToString();
-                Console.WriteLine(url);
-                await next();
-            });
-        }
+            HttpConfiguration config = new HttpConfiguration();
+            config.Routes.MapHttpRoute(
+                name: "CatchAll",
+                routeTemplate: "{*uri}",
+                defaults: new { controller = "Files", uri = RouteParameter.Optional });
 
+
+            appBuilder.UseWebApi(config);
+        }
     }
 }
