@@ -9,8 +9,8 @@ namespace Tulpep.InternetSimulator
         {
             app.Use(async (ctx, next) =>
             {
-                Console.WriteLine(ctx.Request.Host.ToString() + ctx.Request.Path.ToString());
-        
+                string url = ctx.Request.Host.ToString() + ctx.Request.Path.ToString();
+                Console.WriteLine(url);
                 await next();
             });
         }
