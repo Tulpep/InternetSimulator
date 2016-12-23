@@ -1,14 +1,15 @@
 ﻿using System.Collections.Generic;
 using System.Web.Http;
+using System.Web.Http.Controllers;
 
 namespace OwinSelfhostSample
 {
     public class FilesController : ApiController
     {
         // GET api/values 
-        public IEnumerable<string> Get()
+        public string Get()
         {
-            return new string[] { "value1", "value2" };
+            return Request.RequestUri.AbsoluteUri;
         }
     }
 }
