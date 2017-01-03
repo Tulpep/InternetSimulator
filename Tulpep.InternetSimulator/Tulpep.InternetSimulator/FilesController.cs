@@ -9,8 +9,8 @@ namespace OwinSelfhostSample
     {
         public HttpResponseMessage Get()
         {
-            var requestedUri = Request.RequestUri.AbsoluteUri;
-            var localFilePath = @"C:\hello.txt";
+            string requestedUri = Request.RequestUri.AbsoluteUri;
+            string localFilePath = @"C:\hello.txt";
 
             if(!File.Exists(localFilePath)) return Request.CreateResponse(HttpStatusCode.NotFound);
 
