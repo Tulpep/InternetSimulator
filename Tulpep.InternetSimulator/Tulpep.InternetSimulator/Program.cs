@@ -21,6 +21,7 @@ namespace Tulpep.InternetSimulator
 
             List<string> hostModifications = new List<string>();
             hostModifications.Add("microsoft.com");
+            hostModifications.Add("google.com");
 
             bool backupSuccess = BackupHostFile(options, hostFile, hostFileBackup);
             if (!backupSuccess)
@@ -30,13 +31,14 @@ namespace Tulpep.InternetSimulator
             }
 
             ModifyHostFile(options, hostFile, hostModifications);
-            StartWebServer("http://localhost:8080", options);
+            StartWebServer(options);
             RestoreHostFile(options, hostFile, hostFileBackup);
         }
 
-        static void StartWebServer(string baseUri, Options options)
+        static void StartWebServer(Options options)
         {
             if (options.Verbose) Console.WriteLine("Starting web Server...");
+            const string baseUri = "http://*:8080";
             WebApp.Start<WebServerStartup>(baseUri);
             Console.WriteLine("Server running at {0} - press Enter to quit. ", baseUri);
             Console.ReadLine();
