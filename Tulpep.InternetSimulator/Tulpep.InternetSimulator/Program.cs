@@ -22,7 +22,13 @@ namespace Tulpep.InternetSimulator
             List<string> hostModifications = new List<string>();
             hostModifications.Add("microsoft.com");
 
-            BackupHostFile(options, hostFile, hostFileBackup);
+            bool backupSuccess = BackupHostFile(options, hostFile, hostFileBackup);
+            if (!backupSuccess)
+            {
+                Console.WriteLine("Cannot modify HOSTS file. Run this program as Admininistrator");
+                return;
+            }
+
             ModifyHostFile(options, hostFile, hostModifications);
             StartWebServer("http://localhost:8080", options);
             RestoreHostFile(options, hostFile, hostFileBackup);
@@ -36,10 +42,18 @@ namespace Tulpep.InternetSimulator
             Console.ReadLine();
         }
 
-        static void BackupHostFile(Options options, string originalPath, string backupPath)
+        static bool BackupHostFile(Options options, string originalPath, string backupPath)
         {
             if (options.Verbose) Console.WriteLine("Creating backup of HOSTS file in " + originalPath);
-            File.Copy(originalPath, backupPath, true);
+            try
+            {
+                File.Copy(originalPath, backupPath, true);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         static void RestoreHostFile(Options options, string originalPath, string backupPath)
