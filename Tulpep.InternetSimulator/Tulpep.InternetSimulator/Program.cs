@@ -21,6 +21,7 @@ namespace Tulpep.InternetSimulator
 
             List<string> hostModifications = new List<string>();
             hostModifications.Add("microsoft.com");
+            hostModifications.Add("go.microsoft.com");
             hostModifications.Add("google.com");
 
             bool backupSuccess = BackupHostFile(options, hostFile, hostFileBackup);
@@ -38,10 +39,18 @@ namespace Tulpep.InternetSimulator
         static void StartWebServer(Options options)
         {
             if (options.Verbose) Console.WriteLine("Starting web Server...");
-            const string baseUri = "http://*:8080";
-            WebApp.Start<WebServerStartup>(baseUri);
-            Console.WriteLine("Server running at {0} - press Enter to quit. ", baseUri);
-            Console.ReadLine();
+            const string baseUri = "https://*:80";
+            try
+            {
+                WebApp.Start<WebServerStartup>(baseUri);
+                Console.WriteLine("Server running at {0} - press Enter to quit. ", baseUri);
+                Console.ReadLine();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.InnerException.Message);
+            }
+
         }
 
         static bool BackupHostFile(Options options, string originalPath, string backupPath)
