@@ -31,7 +31,7 @@ namespace Tulpep.InternetSimulator
         {
             using (DnsServer server = new DnsServer(10, 10))
             {
-                server.ClientConnected += OnClientConnected;
+                server.ClientConnected += OnDnsClientConnected;
                 server.QueryReceived += OnDnsQueryReceived;
                 server.Start();
 
@@ -40,7 +40,7 @@ namespace Tulpep.InternetSimulator
             }
         }
 
-        static async Task OnClientConnected(object sender, ClientConnectedEventArgs e)
+        static async Task OnDnsClientConnected(object sender, ClientConnectedEventArgs e)
         {
             if (!IPAddress.IsLoopback(e.RemoteEndpoint.Address))
             {
