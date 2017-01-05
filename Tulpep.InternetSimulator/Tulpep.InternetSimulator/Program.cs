@@ -39,7 +39,7 @@ namespace Tulpep.InternetSimulator
         static void StartWebServer(Options options)
         {
             if (options.Verbose) Console.WriteLine("Starting web Server...");
-            const string baseUri = "https://*:80";
+            const string baseUri = "http://*:80";
             try
             {
                 WebApp.Start<WebServerStartup>(baseUri);
