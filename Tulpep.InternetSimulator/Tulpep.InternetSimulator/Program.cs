@@ -3,12 +3,12 @@ using ARSoft.Tools.Net.Dns;
 using Microsoft.Owin.Hosting;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Net;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Management;
 using System.Net.NetworkInformation;
+using System.Diagnostics;
 
 namespace Tulpep.InternetSimulator
 {
@@ -44,11 +44,8 @@ namespace Tulpep.InternetSimulator
                 IPAddressCollection dnsServers = adapterProperties.DnsAddresses;
                 if (dnsServers.Count > 0)
                 {
-                    result.Add(adapter.Description, string.Join(",", dnsServers));
-                }
-                else
-                {
-                    result.Add(adapter.Description, AUTO_IP_ADDRESS);
+                    if(DnsNameIsFromDHCP(adapter.Name)) result.Add(adapter.Description, AUTO_IP_ADDRESS);
+                    else result.Add(adapter.Description, string.Join(",", dnsServers));
                 }
 
             }
@@ -62,6 +59,21 @@ namespace Tulpep.InternetSimulator
             {
                 SetDns(nic.Key, "127.0.0.1");
             }
+        }
+
+
+        static bool DnsNameIsFromDHCP(string nicName)
+        {
+            Process process = new Process();
+            process.StartInfo.FileName = "netsh";
+            process.StartInfo.Arguments = "interface ipv4 show dns " + nicName;
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.Start();
+            process.WaitForExit();
+            var ifg = process.StandardOutput.ReadToEnd();
+            if (ifg.Contains("DHCP:")) return true;
+            else return false;
         }
 
         static void ChangeInterfacesToOriginalDnsConfig(Dictionary<string, string> interfacesConfig)
@@ -85,7 +97,8 @@ namespace Tulpep.InternetSimulator
                     try
                     {
                         ManagementBaseObject newDNS = objMO.GetMethodParameters("SetDNSServerSearchOrder");
-                        newDNS["DNSServerSearchOrder"] = dns.Split(',');
+                        if (dns == AUTO_IP_ADDRESS) newDNS["DNSServerSearchOrder"] = null;
+                        else newDNS["DNSServerSearchOrder"] = dns.Split(',');
                         ManagementBaseObject setDNS = objMO.InvokeMethod("SetDNSServerSearchOrder", newDNS, null);
                         WriteInConsole(String.Format("{0} configured as DNS in {1}", dns, nicDescription));
                     }
