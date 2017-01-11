@@ -85,7 +85,7 @@ namespace Tulpep.InternetSimulator
             }
         }
 
-        static void SetDns(string nicDescription, string dns)
+        static bool SetDns(string nicDescription, string dns)
         {
             ManagementClass objMC = new ManagementClass("Win32_NetworkAdapterConfiguration");
             ManagementObjectCollection objMOC = objMC.GetInstances();
@@ -94,20 +94,18 @@ namespace Tulpep.InternetSimulator
             {
                 if ((bool)objMO["IPEnabled"] && objMO["Description"].Equals(nicDescription))
                 {
-                    try
+                    ManagementBaseObject newDNS = objMO.GetMethodParameters("SetDNSServerSearchOrder");
+                    if (dns != AUTO_IP_ADDRESS) newDNS["DNSServerSearchOrder"] = dns.Split(',');
+                    ManagementBaseObject setDNS = objMO.InvokeMethod("SetDNSServerSearchOrder", newDNS, null);
+                    if ((uint)setDNS["returnValue"] == 0)
                     {
-                        ManagementBaseObject newDNS = objMO.GetMethodParameters("SetDNSServerSearchOrder");
-                        if (dns == AUTO_IP_ADDRESS) newDNS["DNSServerSearchOrder"] = null;
-                        else newDNS["DNSServerSearchOrder"] = dns.Split(',');
-                        ManagementBaseObject setDNS = objMO.InvokeMethod("SetDNSServerSearchOrder", newDNS, null);
                         WriteInConsole(String.Format("{0} configured as DNS in {1}", dns, nicDescription));
+                        return true;
                     }
-                    catch
-                    {
-                        WriteInConsole(String.Format("Cannot configure {0} as DNS in {1}", dns, nicDescription));
-                    }
+                    WriteInConsole(String.Format("Cannot configure {0} as DNS in {1}", dns, nicDescription));
                 }
             }
+            return false;
         }
 
 
