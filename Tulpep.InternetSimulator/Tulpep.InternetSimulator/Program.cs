@@ -16,18 +16,18 @@ namespace Tulpep.InternetSimulator
     {
         private static Options _options = new Options();
         private const string AUTO_IP_ADDRESS = "DHCP";
+        private static Dictionary<string, string> _nicsOriginalConfiguration = GetDnsConfiguration();
         static void Main(string[] args)
         {
             CommandLine.Parser.Default.ParseArguments(args, _options);
 
-            Dictionary<string, string> nicsConfiguration = GetDnsConfiguration();
-            ChangeInterfacesToLocalDns(nicsConfiguration);
+            ChangeInterfacesToLocalDns();
 
             StartDnsServer();
             Console.WriteLine("Press any key to stop server");
             Console.ReadLine();
 
-            ChangeInterfacesToOriginalDnsConfig(nicsConfiguration);
+            ChangeInterfacesToOriginalDnsConfig();
             Console.ReadLine();
         }
 
@@ -52,10 +52,10 @@ namespace Tulpep.InternetSimulator
             return result;
         }
 
-        static void ChangeInterfacesToLocalDns(Dictionary<string, string> interfacesConfig)
+        static void ChangeInterfacesToLocalDns()
         {
             WriteInConsole("Configuring DNS servers in Network Intercaces as 127.0.0.1...");
-            foreach (var nic in interfacesConfig)
+            foreach (var nic in _nicsOriginalConfiguration)
             {
                 SetDns(nic.Key, "127.0.0.1");
             }
@@ -71,15 +71,14 @@ namespace Tulpep.InternetSimulator
             process.StartInfo.RedirectStandardOutput = true;
             process.Start();
             process.WaitForExit();
-            var ifg = process.StandardOutput.ReadToEnd();
-            if (ifg.Contains("DHCP:")) return true;
+            if (process.StandardOutput.ReadToEnd().Contains("DHCP:")) return true;
             else return false;
         }
 
-        static void ChangeInterfacesToOriginalDnsConfig(Dictionary<string, string> interfacesConfig)
+        static void ChangeInterfacesToOriginalDnsConfig()
         {
             WriteInConsole("Restoring DNS servers in Network Interfaces to their original configuration...");
-            foreach (var nic in interfacesConfig)
+            foreach (var nic in _nicsOriginalConfiguration)
             {
                 SetDns(nic.Key, nic.Value);
             }
