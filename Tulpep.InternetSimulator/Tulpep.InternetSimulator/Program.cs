@@ -41,8 +41,8 @@ namespace Tulpep.InternetSimulator
             foreach (NetworkInterface adapter in adapters)
             {
                 IPInterfaceProperties adapterProperties = adapter.GetIPProperties();
-                IPAddressCollection dnsServers = adapterProperties.DnsAddresses;
-                if (dnsServers.Count > 0)
+                IEnumerable<IPAddress> dnsServers = adapterProperties.DnsAddresses.Where(x => x.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork);
+                if (dnsServers.Count() > 0)
                 {
                     if(DnsNameIsFromDHCP(adapter.Name)) result.Add(adapter.Description, AUTO_IP_ADDRESS);
                     else result.Add(adapter.Description, string.Join(",", dnsServers));
