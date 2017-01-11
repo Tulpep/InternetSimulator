@@ -110,12 +110,10 @@ namespace Tulpep.InternetSimulator
 
         static void StartDnsServer()
         {
-            using (DnsServer server = new DnsServer(10, 10))
-            {
-                server.ClientConnected += OnDnsClientConnected;
-                server.QueryReceived += OnDnsQueryReceived;
-                server.Start();
-            }
+            DnsServer server = new DnsServer(10, 10);
+            server.ClientConnected += OnDnsClientConnected;
+            server.QueryReceived += OnDnsQueryReceived;
+            server.Start();
         }
 
         static async Task OnDnsClientConnected(object sender, ClientConnectedEventArgs e)
@@ -129,8 +127,6 @@ namespace Tulpep.InternetSimulator
 
         static async Task OnDnsQueryReceived(object sender, QueryReceivedEventArgs e)
         {
-
-            string server = "8.8.8.8";
             DnsMessage message = e.Query as DnsMessage;
 
             if (message == null)
@@ -149,8 +145,16 @@ namespace Tulpep.InternetSimulator
                 }
                 else
                 {
+
+                    List<IPAddress> upStreamServers = new List<IPAddress>();
+                    foreach(var dnsServers in _nicsOriginalConfiguration.Values.Distinct())
+                    {
+                        if (dnsServers == AUTO_IP_ADDRESS) continue;
+                        foreach (string dns in dnsServers.Split(',')) upStreamServers.Add(IPAddress.Parse(dns));
+                    }
+
                     // send query to upstream server
-                    DnsClient dnsClient = new DnsClient(IPAddress.Parse(server), 5000);
+                    DnsClient dnsClient = new DnsClient(upStreamServers, 5000);
                     DnsMessage upstreamResponse = await dnsClient.ResolveAsync(question.Name, question.RecordType, question.RecordClass);
 
                     // if got an answer, copy it to the message sent to the client
@@ -174,7 +178,7 @@ namespace Tulpep.InternetSimulator
                 e.Response = response;
 
                 if (response.AnswerRecords.Count != 0) WriteInConsole(string.Format("DNS Response: {0}", response.AnswerRecords.FirstOrDefault()));
-                else WriteInConsole(string.Format("Cannot find {0} records for {1}", question.RecordType.ToString().ToUpperInvariant(), question.Name));
+                else WriteInConsole(string.Format("DNS Response: Can not find {0} records for {1}", question.RecordType.ToString().ToUpperInvariant(), question.Name));
 
             }
         }
