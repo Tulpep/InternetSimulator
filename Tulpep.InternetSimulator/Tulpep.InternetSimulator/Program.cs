@@ -21,11 +21,16 @@ namespace Tulpep.InternetSimulator
         {
             CommandLine.Parser.Default.ParseArguments(args, _options);
 
-            ChangeInterfacesToLocalDns();
+            if (ChangeInterfacesToLocalDns() && StartDnsServer())
+            {
+                Console.WriteLine("Press any key to stop server");
+                Console.ReadLine();
+            }
+            else return;
 
-            StartDnsServer();
-            Console.WriteLine("Press any key to stop server");
-            Console.ReadLine();
+            ;
+           // StartWebServer();
+
 
             ChangeInterfacesToOriginalDnsConfig();
             Console.ReadLine();
@@ -40,8 +45,7 @@ namespace Tulpep.InternetSimulator
             NetworkInterface[] adapters = NetworkInterface.GetAllNetworkInterfaces();
             foreach (NetworkInterface adapter in adapters)
             {
-                IPInterfaceProperties adapterProperties = adapter.GetIPProperties();
-                IEnumerable<IPAddress> dnsServers = adapterProperties.DnsAddresses.Where(x => x.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork);
+                IEnumerable<IPAddress> dnsServers = adapter.GetIPProperties().DnsAddresses.Where(x => x.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork);
                 if (dnsServers.Count() > 0)
                 {
                     if(DnsNameIsFromDHCP(adapter.Name)) result.Add(adapter.Description, AUTO_IP_ADDRESS);
@@ -52,13 +56,14 @@ namespace Tulpep.InternetSimulator
             return result;
         }
 
-        static void ChangeInterfacesToLocalDns()
+        static bool ChangeInterfacesToLocalDns()
         {
             WriteInConsole("Configuring DNS servers in Network Intercaces as 127.0.0.1...");
             foreach (var nic in _nicsOriginalConfiguration)
             {
-                SetDns(nic.Key, "127.0.0.1");
+                if (!SetDns(nic.Key, "127.0.0.1")) return false;
             }
+            return true;
         }
 
 
@@ -75,13 +80,14 @@ namespace Tulpep.InternetSimulator
             else return false;
         }
 
-        static void ChangeInterfacesToOriginalDnsConfig()
+        static bool ChangeInterfacesToOriginalDnsConfig()
         {
             WriteInConsole("Restoring DNS servers in Network Interfaces to their original configuration...");
             foreach (var nic in _nicsOriginalConfiguration)
             {
-                SetDns(nic.Key, nic.Value);
+                if (!SetDns(nic.Key, nic.Value)) return false;
             }
+            return true;
         }
 
         static bool SetDns(string nicDescription, string dns)
@@ -101,19 +107,27 @@ namespace Tulpep.InternetSimulator
                         WriteInConsole(String.Format("{0} configured as DNS in {1}", dns, nicDescription));
                         return true;
                     }
-                    WriteInConsole(String.Format("Cannot configure {0} as DNS in {1}", dns, nicDescription));
                 }
             }
+            WriteInConsole(String.Format("Cannot configure {0} as DNS in {1}", dns, nicDescription));
             return false;
         }
 
 
-        static void StartDnsServer()
+        static bool StartDnsServer()
         {
-            DnsServer server = new DnsServer(10, 10);
-            server.ClientConnected += OnDnsClientConnected;
-            server.QueryReceived += OnDnsQueryReceived;
-            server.Start();
+            try
+            {
+                DnsServer server = new DnsServer(10, 10);
+                server.ClientConnected += OnDnsClientConnected;
+                server.QueryReceived += OnDnsQueryReceived;
+                server.Start();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         static async Task OnDnsClientConnected(object sender, ClientConnectedEventArgs e)
@@ -185,21 +199,21 @@ namespace Tulpep.InternetSimulator
 
 
 
-        static void StartWebServer(Options options)
+        static bool StartWebServer()
         {
-            WriteInConsole("Starting web Server...");
-            const string baseUri = "http://*:80";
             try
             {
+                WriteInConsole("Starting web Server...");
+                const string baseUri = "http://*:80";
                 WebApp.Start<WebServerStartup>(baseUri);
-                WriteInConsole("Server running at {0} - press Enter to quit. ");
-                // Console.ReadLine();
+                WriteInConsole(String.Format("Server running at {0} - press Enter to quit. ", baseUri));
+                return true;
             }
             catch (Exception ex)
             {
                 WriteInConsole(ex.InnerException.Message);
+                return false;
             }
-
         }
 
 
