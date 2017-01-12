@@ -97,20 +97,27 @@ namespace Tulpep.InternetSimulator
 
         static bool SetDns(string nicDescription, string dns)
         {
-            ManagementClass objMC = new ManagementClass("Win32_NetworkAdapterConfiguration");
-            ManagementObjectCollection objMOC = objMC.GetInstances();
-
-            foreach (ManagementObject objMO in objMOC)
+            foreach (ManagementObject nicConfiguration in new ManagementClass("Win32_NetworkAdapterConfiguration").GetInstances())
             {
-                if ((bool)objMO["IPEnabled"] && objMO["Description"].Equals(nicDescription))
+                if ((bool)nicConfiguration["IPEnabled"] && nicConfiguration["Description"].Equals(nicDescription))
                 {
-                    ManagementBaseObject newDNS = objMO.GetMethodParameters("SetDNSServerSearchOrder");
+                    ManagementBaseObject newDNS = nicConfiguration.GetMethodParameters("SetDNSServerSearchOrder");
                     if (dns != AUTO_IP_ADDRESS) newDNS["DNSServerSearchOrder"] = dns.Split(',');
-                    ManagementBaseObject setDNS = objMO.InvokeMethod("SetDNSServerSearchOrder", newDNS, null);
+                    ManagementBaseObject setDNS = nicConfiguration.InvokeMethod("SetDNSServerSearchOrder", newDNS, null);
                     if ((uint)setDNS["returnValue"] == 0)
                     {
-                        WriteInConsole(String.Format("{0} configured as DNS in {1}", dns, nicDescription));
-                        return true;
+                        foreach(ManagementObject nic in new ManagementClass("Win32_NetworkAdapter").GetInstances())
+                        {
+                            if(nic["Description"].ToString() == nicDescription)
+                            {
+                                nic.InvokeMethod("Disable", null);
+                                nic.InvokeMethod("Enable", null);
+                                WriteInConsole(String.Format("{0} configured as DNS in {1}", dns, nicDescription));
+                                return true;
+                            }
+                        }
+
+
                     }
                 }
             }
