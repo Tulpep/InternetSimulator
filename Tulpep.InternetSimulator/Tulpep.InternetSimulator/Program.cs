@@ -38,12 +38,7 @@ namespace Tulpep.InternetSimulator
             }
             else return;
 
-            ;
-           // StartWebServer();
-
-
             ChangeInterfacesToOriginalDnsConfig();
-            Console.ReadLine();
         }
 
         static void GetDnsConfiguration()
