@@ -52,12 +52,13 @@ namespace Tulpep.InternetSimulator
                     if(DnsNameIsFromDHCP(adapter.Name)) _nicsOriginalConfiguration.Add(adapter.Description, AUTO_IP_ADDRESS);
                     else _nicsOriginalConfiguration.Add(adapter.Description, string.Join(",", dnsServers));
 
-                    upStreamServers.AddRange(dnsServers);
+                    upStreamServers.AddRange(dnsServers.Where(x => !IPAddress.IsLoopback(x)));
                 }
 
             }
 
-            _upStreamDnsClient = new DnsClient(upStreamServers.Distinct(), 5000);
+            if(upStreamServers.Count > 0)
+                _upStreamDnsClient = new DnsClient(upStreamServers.Distinct(), 5000);
         }
 
         static bool ChangeInterfacesToLocalDns()
@@ -165,7 +166,7 @@ namespace Tulpep.InternetSimulator
                 else if(question.RecordType == RecordType.Aaaa)
                     response.AnswerRecords.Add(new AaaaRecord(question.Name, 10, IPAddress.IPv6Loopback));
             }
-            else
+            else if(_upStreamDnsClient != null)
             {
                 // send query to upstream server
                 DnsMessage upstreamResponse = await _upStreamDnsClient.ResolveAsync(question.Name, question.RecordType, question.RecordClass);
