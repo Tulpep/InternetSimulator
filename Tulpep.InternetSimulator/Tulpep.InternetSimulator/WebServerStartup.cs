@@ -14,7 +14,7 @@ namespace Tulpep.InternetSimulator
                 defaults: new { controller = "Files", uri = RouteParameter.Optional });
 
 
-            appBuilder.UseWebApi(config);
+            appBuilder.Use<CustomExceptionMiddleware>().UseWebApi(config);
         }
     }
 }
