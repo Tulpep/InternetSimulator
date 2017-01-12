@@ -23,6 +23,14 @@ namespace Tulpep.InternetSimulator
             CommandLine.Parser.Default.ParseArguments(args, _options);
 
             GetDnsConfiguration();
+            if(_nicsOriginalConfiguration.Count == 0)
+            {
+                Console.WriteLine("Not Enable Network Adpaters found");
+                return;
+            }
+
+
+
             if (StartDnsServer() && StartWebServer() && ChangeInterfacesToLocalDns())
             {
                 Console.WriteLine("Press any key to stop...");
