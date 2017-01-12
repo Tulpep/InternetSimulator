@@ -128,10 +128,12 @@ namespace Tulpep.InternetSimulator
                 server.ClientConnected += OnDnsClientConnected;
                 server.QueryReceived += OnDnsQueryReceived;
                 server.Start();
+                WriteInConsole("DNS Server started");
                 return true;
             }
             catch
             {
+                WriteInConsole("Can not start DNS Server");
                 return false;
             }
         }
