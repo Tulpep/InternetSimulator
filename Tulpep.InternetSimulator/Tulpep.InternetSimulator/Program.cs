@@ -31,7 +31,7 @@ namespace Tulpep.InternetSimulator
 
 
 
-            if (StartDnsServer() && StartWebServer() && ChangeInterfacesToLocalDns())
+            if (StartWebServer() && StartDnsServer()  && ChangeInterfacesToLocalDns())
             {
                 Console.WriteLine("Press any key to stop...");
                 Console.ReadLine();
@@ -202,10 +202,13 @@ namespace Tulpep.InternetSimulator
         {
             try
             {
-                const string baseUri = "http://*:80";
-                WebApp.Start<WebServerStartup>(baseUri);
+                WebApp.Start<WebServerStartup>("http://*:80");
+                WriteInConsole(String.Format("HTTP Web Server running at 80 TCP Port"));
+                //WebApp.Start<WebServerStartup>("https://*:443");
+                WriteInConsole(String.Format("HTTPS Web Server running at 443 TCP Port"));
+
+                //Removes exceptions from console
                 Trace.Listeners.Remove("HostingTraceListener");
-                WriteInConsole(String.Format("Web Server running at {0}", baseUri));
                 return true;
             }
             catch (Exception ex)
