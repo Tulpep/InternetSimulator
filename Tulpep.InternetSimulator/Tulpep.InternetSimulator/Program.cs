@@ -25,7 +25,7 @@ namespace Tulpep.InternetSimulator
             GetDnsConfiguration();
             if (StartDnsServer() && StartWebServer() && ChangeInterfacesToLocalDns())
             {
-                Console.WriteLine("Press any key to stop server");
+                Console.WriteLine("Press any key to stop...");
                 Console.ReadLine();
             }
             else return;
@@ -125,7 +125,6 @@ namespace Tulpep.InternetSimulator
                 DnsServer server = new DnsServer(10, 10);
                 server.ClientConnected += OnDnsClientConnected;
                 server.QueryReceived += OnDnsQueryReceived;
-                server.ExceptionThrown += OnDnsExceptionThrown;
                 server.Start();
                 WriteInConsole("DNS Server started");
                 return true;
@@ -137,11 +136,6 @@ namespace Tulpep.InternetSimulator
             }
         }
 
-
-        async static Task OnDnsExceptionThrown(object sender, ExceptionEventArgs e)
-        {
-            WriteInConsole(e.Exception.Message);
-        }
 
         static async Task OnDnsClientConnected(object sender, ClientConnectedEventArgs e)
         {
@@ -199,7 +193,8 @@ namespace Tulpep.InternetSimulator
             {
                 const string baseUri = "http://*:80";
                 WebApp.Start<WebServerStartup>(baseUri);
-                WriteInConsole(String.Format("Server running at {0} - press Enter to quit. ", baseUri));
+                Trace.Listeners.Remove("HostingTraceListener");
+                WriteInConsole(String.Format("Web Server running at {0}", baseUri));
                 return true;
             }
             catch (Exception ex)
