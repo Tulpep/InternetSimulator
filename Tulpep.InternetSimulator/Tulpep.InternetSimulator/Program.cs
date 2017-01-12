@@ -16,12 +16,14 @@ namespace Tulpep.InternetSimulator
     {
         private static Options _options = new Options();
         private const string AUTO_IP_ADDRESS = "DHCP";
-        private static Dictionary<string, string> _nicsOriginalConfiguration = GetDnsConfiguration();
+        private static Dictionary<string, string> _nicsOriginalConfiguration = new Dictionary<string, string>();
+        private static DnsClient _upStreamDnsClient = null;
         static void Main(string[] args)
         {
             CommandLine.Parser.Default.ParseArguments(args, _options);
 
-            if (ChangeInterfacesToLocalDns() && StartDnsServer())
+            GetDnsConfiguration();
+            if (StartDnsServer() && ChangeInterfacesToLocalDns())
             {
                 Console.WriteLine("Press any key to stop server");
                 Console.ReadLine();
@@ -38,22 +40,26 @@ namespace Tulpep.InternetSimulator
 
 
 
-        static Dictionary<string, string> GetDnsConfiguration()
+        static void GetDnsConfiguration()
         {
-            Dictionary<string, string> result = new Dictionary<string, string>();
-
-            NetworkInterface[] adapters = NetworkInterface.GetAllNetworkInterfaces();
+            List<IPAddress> upStreamServers = new List<IPAddress>();
+            IEnumerable<NetworkInterface> adapters = NetworkInterface.GetAllNetworkInterfaces()
+                .Where(x => x.NetworkInterfaceType != NetworkInterfaceType.Tunnel && 
+                x.NetworkInterfaceType != NetworkInterfaceType.Loopback);
             foreach (NetworkInterface adapter in adapters)
             {
                 IEnumerable<IPAddress> dnsServers = adapter.GetIPProperties().DnsAddresses.Where(x => x.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork);
                 if (dnsServers.Count() > 0)
                 {
-                    if(DnsNameIsFromDHCP(adapter.Name)) result.Add(adapter.Description, AUTO_IP_ADDRESS);
-                    else result.Add(adapter.Description, string.Join(",", dnsServers));
+                    if(DnsNameIsFromDHCP(adapter.Name)) _nicsOriginalConfiguration.Add(adapter.Description, AUTO_IP_ADDRESS);
+                    else _nicsOriginalConfiguration.Add(adapter.Description, string.Join(",", dnsServers));
+
+                    upStreamServers.AddRange(dnsServers);
                 }
 
             }
-            return result;
+
+            _upStreamDnsClient = new DnsClient(upStreamServers.Distinct(), 5000);
         }
 
         static bool ChangeInterfacesToLocalDns()
@@ -159,17 +165,8 @@ namespace Tulpep.InternetSimulator
                 }
                 else
                 {
-
-                    List<IPAddress> upStreamServers = new List<IPAddress>();
-                    foreach(var dnsServers in _nicsOriginalConfiguration.Values.Distinct())
-                    {
-                        if (dnsServers == AUTO_IP_ADDRESS) continue;
-                        foreach (string dns in dnsServers.Split(',')) upStreamServers.Add(IPAddress.Parse(dns));
-                    }
-
                     // send query to upstream server
-                    DnsClient dnsClient = new DnsClient(upStreamServers, 5000);
-                    DnsMessage upstreamResponse = await dnsClient.ResolveAsync(question.Name, question.RecordType, question.RecordClass);
+                    DnsMessage upstreamResponse = await _upStreamDnsClient.ResolveAsync(question.Name, question.RecordType, question.RecordClass);
 
                     // if got an answer, copy it to the message sent to the client
                     if (upstreamResponse != null)
