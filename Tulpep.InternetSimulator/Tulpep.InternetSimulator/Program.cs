@@ -156,7 +156,7 @@ namespace Tulpep.InternetSimulator
             DnsMessage response = message.CreateResponseInstance();
 
             //If domain match return localhost
-            if (question.Name.Equals(DomainName.Parse("microsoft.com")))
+            if (question.Name.Equals(DomainName.Parse("microsoft.com")) || question.Name.Equals(DomainName.Parse("www.msftncsi.com")))
             {
                 response.ReturnCode = ReturnCode.NoError;
 
