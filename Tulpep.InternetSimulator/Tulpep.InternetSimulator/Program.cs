@@ -9,6 +9,7 @@ using System.Linq;
 using System.Management;
 using System.Net.NetworkInformation;
 using System.Diagnostics;
+using System.Management.Automation;
 
 namespace Tulpep.InternetSimulator
 {
@@ -21,6 +22,9 @@ namespace Tulpep.InternetSimulator
         static void Main(string[] args)
         {
             CommandLine.Parser.Default.ParseArguments(args, _options);
+
+
+            InstallCertificate(new List<string> { "larnia.co", "popo.com", "www.msftncsi.com"});
 
             GetDnsConfiguration();
             if(_nicsOriginalConfiguration.Count == 0)
@@ -39,6 +43,7 @@ namespace Tulpep.InternetSimulator
             else return;
 
             ChangeInterfacesToOriginalDnsConfig();
+
         }
 
         static void GetDnsConfiguration()
@@ -167,7 +172,7 @@ namespace Tulpep.InternetSimulator
             DnsMessage response = message.CreateResponseInstance();
 
             //If domain match return localhost
-            if (question.Name.Equals(DomainName.Parse("microsoft.com")) || question.Name.Equals(DomainName.Parse("www.msftncsi.com")))
+            if (question.Name.Equals(DomainName.Parse("www.msftncsi.com")) || question.Name.Equals(DomainName.Parse("larnia.co")) || question.Name.Equals(DomainName.Parse("popo.com")))
             {
                 response.ReturnCode = ReturnCode.NoError;
 
@@ -196,15 +201,44 @@ namespace Tulpep.InternetSimulator
             else WriteInConsole(string.Format("DNS Response: Can not find {0} records for {1}", question.RecordType.ToString().ToUpperInvariant(), question.Name));
         }
 
+        static void InstallCertificate(IEnumerable<string> domains)
+        {
+            //Create certificate in Computer Personal store
+            string createCertificateScript = string.Format(@"New-SelfSignedCertificate -DnsName {0} -CertStoreLocation {1} -FriendlyName ""{2}""", 
+                                        string.Join(",", domains), 
+                                        @"Cert:\LocalMachine\My", 
+                                        "Internet Simulator");
+
+            string certHash = PowerShell.Create().AddScript(createCertificateScript).Invoke()[0].Properties["Thumbprint"].Value.ToString();
+
+            string copyCertScript = string.Format(@"
+                    $srcStore = New-Object System.Security.Cryptography.X509Certificates.X509Store ""My"", ""LocalMachine""
+                    $srcStore.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadOnly)
+                    $cert =  $srcStore.certificates -match ""{0}""
+
+                    $dstStore = New-Object System.Security.Cryptography.X509Certificates.X509Store ""Root"", ""LocalMachine""
+                    $dstStore.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
+                    $dstStore.Add($cert[0])
+
+                    $srcStore.Close
+                    $dstStore.Close
+
+            ", certHash);
+
+            PowerShell.Create().AddScript(copyCertScript).Invoke();
+
+
+
+        }
 
 
         static bool StartWebServer()
         {
             try
             {
-                WebApp.Start<WebServerStartup>("http://*:80");
+                //WebApp.Start<WebServerStartup>("http://*:80");
                 WriteInConsole(String.Format("HTTP Web Server running at 80 TCP Port"));
-                //WebApp.Start<WebServerStartup>("https://*:443");
+                WebApp.Start<WebServerStartup>("https://*:443");
                 WriteInConsole(String.Format("HTTPS Web Server running at 443 TCP Port"));
 
                 //Removes exceptions from console
