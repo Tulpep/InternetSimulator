@@ -10,6 +10,7 @@ using System.Management;
 using System.Net.NetworkInformation;
 using System.Diagnostics;
 using System.Management.Automation;
+using System.Threading;
 
 namespace Tulpep.InternetSimulator
 {
@@ -20,36 +21,52 @@ namespace Tulpep.InternetSimulator
         private const string SSL_FRIENDLY_NAME = "Internet Simulator";
         private static Dictionary<string, string> _nicsOriginalConfiguration = new Dictionary<string, string>();
         private static DnsClient _upStreamDnsClient = null;
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
+            var exitEvent = new ManualResetEvent(false);
+            Console.CancelKeyPress += (sender, eventArgs) => {
+                ExitCleanUp();
+                eventArgs.Cancel = true;
+                exitEvent.Set();
+            };
+
+
             CommandLine.Parser.Default.ParseArguments(args, _options);
 
             GetDnsConfiguration();
             if(_nicsOriginalConfiguration.Count == 0)
             {
                 Console.WriteLine("Not Enable or valid Network Adpaters found");
-                return;
+                return 1;
             }
 
             string certHash = InstallCertificate(new List<string> { "larnia.co", "popo.com", "www.msftncsi.com" });
             if (String.IsNullOrWhiteSpace(certHash))
             {
                 Console.WriteLine("Cannot manage SSL Certificates in your System");
-                return;
-            }            
-
-            if (AddSSLBinding(certHash) && StartWebServer() && StartDnsServer()  && ChangeInterfacesToLocalDns())
-            {
-                Console.WriteLine("Press any key to stop...");
-                Console.ReadLine();
+                return 1;
             }
-            else return;
 
+            if (AddSSLBinding(certHash) && StartWebServer() && StartDnsServer() && ChangeInterfacesToLocalDns())
+            {
+                Console.WriteLine("Internet Simulator Running. Press Ctrl + C to Stop it");
+                exitEvent.WaitOne();
+                return 0;
+            }
+            else
+            {
+                ExitCleanUp();
+                return 1;
+            }
+        }
+
+
+        static void ExitCleanUp()
+        {
+            WriteInConsole("Ctrl + C pressed. Stopping the Internet Simulator. Please wait");
             ChangeInterfacesToOriginalDnsConfig();
             RemoveSSLBinding();
             RemoveCertificates();
-
-            Console.ReadLine();
         }
 
         static void GetDnsConfiguration()
