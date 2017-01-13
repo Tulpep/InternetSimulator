@@ -23,9 +23,6 @@ namespace Tulpep.InternetSimulator
         {
             CommandLine.Parser.Default.ParseArguments(args, _options);
 
-
-            InstallCertificate(new List<string> { "larnia.co", "popo.com", "www.msftncsi.com"});
-
             GetDnsConfiguration();
             if(_nicsOriginalConfiguration.Count == 0)
             {
@@ -33,9 +30,14 @@ namespace Tulpep.InternetSimulator
                 return;
             }
 
+            string certHash = InstallCertificate(new List<string> { "larnia.co", "popo.com", "www.msftncsi.com" });
+            if (String.IsNullOrWhiteSpace(certHash))
+            {
+                WriteInConsole("ERROR");
+                return;
+            }            
 
-
-            if (StartWebServer() && StartDnsServer()  && ChangeInterfacesToLocalDns())
+            if (DeleteOldBinding() && AddSSLBinding(certHash) && StartWebServer() && StartDnsServer()  && ChangeInterfacesToLocalDns())
             {
                 Console.WriteLine("Press any key to stop...");
                 Console.ReadLine();
@@ -201,7 +203,7 @@ namespace Tulpep.InternetSimulator
             else WriteInConsole(string.Format("DNS Response: Can not find {0} records for {1}", question.RecordType.ToString().ToUpperInvariant(), question.Name));
         }
 
-        static void InstallCertificate(IEnumerable<string> domains)
+        static string InstallCertificate(IEnumerable<string> domains)
         {
             //Create certificate in Computer Personal store
             string createCertificateScript = string.Format(@"New-SelfSignedCertificate -DnsName {0} -CertStoreLocation {1} -FriendlyName ""{2}""", 
@@ -209,9 +211,13 @@ namespace Tulpep.InternetSimulator
                                         @"Cert:\LocalMachine\My", 
                                         "Internet Simulator");
 
-            string certHash = PowerShell.Create().AddScript(createCertificateScript).Invoke()[0].Properties["Thumbprint"].Value.ToString();
 
-            string copyCertScript = string.Format(@"
+            var createCertificatesPs = PowerShell.Create();
+            if(!createCertificatesPs.HadErrors)
+            {
+
+                string certHash = createCertificatesPs.AddScript(createCertificateScript).Invoke()[0].Properties["Thumbprint"].Value.ToString();
+                string copyCertScript = string.Format(@"
                     $srcStore = New-Object System.Security.Cryptography.X509Certificates.X509Store ""My"", ""LocalMachine""
                     $srcStore.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadOnly)
                     $cert =  $srcStore.certificates -match ""{0}""
@@ -223,13 +229,14 @@ namespace Tulpep.InternetSimulator
                     $srcStore.Close
                     $dstStore.Close
 
-            ", certHash);
+                    ", certHash);
 
-            PowerShell.Create().AddScript(copyCertScript).Invoke();
+                var AddCertificateToRootPs = PowerShell.Create();
+                AddCertificateToRootPs.AddScript(copyCertScript).Invoke();
+                if (!AddCertificateToRootPs.HadErrors) return certHash;
+            }
 
-            DeleteOldBinding();
-            AddSSLBinding(certHash);
-
+            return String.Empty;
         }
 
 
@@ -263,13 +270,15 @@ namespace Tulpep.InternetSimulator
         {
             try
             {
-                //WebApp.Start<WebServerStartup>("http://*:80");
-                WriteInConsole(String.Format("HTTP Web Server running at 80 TCP Port"));
-                WebApp.Start<WebServerStartup>("https://*:443");
-                WriteInConsole(String.Format("HTTPS Web Server running at 443 TCP Port"));
-
+                WebApp.Start<WebServerStartup>("http://*:80");
                 //Removes exceptions from console
                 Trace.Listeners.Remove("HostingTraceListener");
+                WriteInConsole(String.Format("HTTP Web Server running at 80 TCP Port"));
+
+                WebApp.Start<WebServerStartup>("https://*:443");
+                //Removes exceptions from console
+                Trace.Listeners.Remove("HostingTraceListener");
+                WriteInConsole(String.Format("HTTPS Web Server running at 443 TCP Port"));
                 return true;
             }
             catch (Exception ex)
