@@ -17,6 +17,7 @@ namespace Tulpep.InternetSimulator
     {
         private static Options _options = new Options();
         private const string AUTO_IP_ADDRESS = "DHCP";
+        private const string SSL_FRIENDLY_NAME = "Internet Simulator";
         private static Dictionary<string, string> _nicsOriginalConfiguration = new Dictionary<string, string>();
         private static DnsClient _upStreamDnsClient = null;
         static void Main(string[] args)
@@ -26,18 +27,18 @@ namespace Tulpep.InternetSimulator
             GetDnsConfiguration();
             if(_nicsOriginalConfiguration.Count == 0)
             {
-                Console.WriteLine("Not Enable Network Adpaters found");
+                Console.WriteLine("Not Enable or valid Network Adpaters found");
                 return;
             }
 
             string certHash = InstallCertificate(new List<string> { "larnia.co", "popo.com", "www.msftncsi.com" });
             if (String.IsNullOrWhiteSpace(certHash))
             {
-                WriteInConsole("ERROR");
+                Console.WriteLine("Cannot manage SSL Certificates in your System");
                 return;
             }            
 
-            if (DeleteOldBinding() && AddSSLBinding(certHash) && StartWebServer() && StartDnsServer()  && ChangeInterfacesToLocalDns())
+            if (AddSSLBinding(certHash) && StartWebServer() && StartDnsServer()  && ChangeInterfacesToLocalDns())
             {
                 Console.WriteLine("Press any key to stop...");
                 Console.ReadLine();
@@ -45,7 +46,10 @@ namespace Tulpep.InternetSimulator
             else return;
 
             ChangeInterfacesToOriginalDnsConfig();
+            RemoveSSLBinding();
+            RemoveCertificates();
 
+            Console.ReadLine();
         }
 
         static void GetDnsConfiguration()
@@ -208,16 +212,17 @@ namespace Tulpep.InternetSimulator
             //Create certificate in Computer Personal store
             string createCertificateScript = string.Format(@"New-SelfSignedCertificate -DnsName {0} -CertStoreLocation {1} -FriendlyName ""{2}""", 
                                         string.Join(",", domains), 
-                                        @"Cert:\LocalMachine\My", 
-                                        "Internet Simulator");
-
+                                        @"Cert:\LocalMachine\My",
+                                        SSL_FRIENDLY_NAME);
 
             var createCertificatesPs = PowerShell.Create();
-            if(!createCertificatesPs.HadErrors)
-            {
+            var createCertifiacateResult = createCertificatesPs.AddScript(createCertificateScript).Invoke();
+            if (createCertificatesPs.HadErrors) return String.Empty;
+            string certHash = createCertifiacateResult[0].Properties["Thumbprint"].Value.ToString();
 
-                string certHash = createCertificatesPs.AddScript(createCertificateScript).Invoke()[0].Properties["Thumbprint"].Value.ToString();
-                string copyCertScript = string.Format(@"
+            WriteInConsole("SLL Certificate created and saved in your Computer Personal Store. Thumbprint " + certHash);
+
+            string copyCertScript = string.Format(@"
                     $srcStore = New-Object System.Security.Cryptography.X509Certificates.X509Store ""My"", ""LocalMachine""
                     $srcStore.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadOnly)
                     $cert =  $srcStore.certificates -match ""{0}""
@@ -231,16 +236,39 @@ namespace Tulpep.InternetSimulator
 
                     ", certHash);
 
-                var AddCertificateToRootPs = PowerShell.Create();
-                AddCertificateToRootPs.AddScript(copyCertScript).Invoke();
-                if (!AddCertificateToRootPs.HadErrors) return certHash;
-            }
+            var AddCertificateToRootPs = PowerShell.Create();
+            AddCertificateToRootPs.AddScript(copyCertScript).Invoke();
+            if (AddCertificateToRootPs.HadErrors) return String.Empty;
 
-            return String.Empty;
+            WriteInConsole("SLL Certificate added to Trusted Root Certification Authorities");
+            return certHash;
+        }
+
+        static bool RemoveCertificates()
+        {
+            var powerShell = PowerShell.Create();
+
+            string removeCertScript = string.Format(@"
+                    Get-ChildItem Cert:\LocalMachine\My | Where {{ $_.FriendlyName -match ""Internet Simulator""}} | Remove-Item
+                    Get-ChildItem Cert:\LocalMachine\Root | Where {{ $_.FriendlyName -match ""Internet Simulator""}} | Remove-Item
+                    ", SSL_FRIENDLY_NAME);
+
+
+            powerShell.AddScript(removeCertScript).Invoke();
+            if (powerShell.HadErrors)
+            {
+                WriteInConsole("Cannot remove SSL generated certificates from the system");
+                return false; 
+            }
+            else
+            {
+                WriteInConsole("SLL generated certificates has been remove from the System");
+                return true;
+            }
         }
 
 
-        static bool DeleteOldBinding()
+        static bool RemoveSSLBinding()
         {
             Process process = new Process();
             process.StartInfo.FileName = "netsh";
@@ -249,12 +277,19 @@ namespace Tulpep.InternetSimulator
             process.StartInfo.RedirectStandardOutput = true;
             process.Start();
             process.WaitForExit();
-            if (process.ExitCode == 0) return true;
-            else return false;
+            if (process.ExitCode == 0)
+            {
+                WriteInConsole("SSL binding of port 443 has been removed");
+                return true;
+            }
+            return false;
         }
+
 
         static bool AddSSLBinding(string certHash)
         {
+            RemoveSSLBinding();
+
             Process process = new Process();
             process.StartInfo.FileName = "netsh";
             process.StartInfo.Arguments = string.Format("http add sslcert ipport=0.0.0.0:443 certhash={0} appid={{{1}}}", certHash, Guid.NewGuid());
@@ -262,8 +297,13 @@ namespace Tulpep.InternetSimulator
             process.StartInfo.RedirectStandardOutput = true;
             process.Start();
             process.WaitForExit();
-            if (process.ExitCode == 0) return true;
-            else return false;
+            if (process.ExitCode == 0)
+            {
+                WriteInConsole("Added SSL Bindings with generated certificates to 443 Port");
+                return true;
+            }
+            WriteInConsole("Cannot modify SSL Bindings in your System");
+            return false;
         }
 
         static bool StartWebServer()
