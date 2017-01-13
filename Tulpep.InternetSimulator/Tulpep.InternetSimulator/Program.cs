@@ -227,10 +227,37 @@ namespace Tulpep.InternetSimulator
 
             PowerShell.Create().AddScript(copyCertScript).Invoke();
 
-
+            DeleteOldBinding();
+            AddSSLBinding(certHash);
 
         }
 
+
+        static bool DeleteOldBinding()
+        {
+            Process process = new Process();
+            process.StartInfo.FileName = "netsh";
+            process.StartInfo.Arguments = "http delete sslcert ipport=0.0.0.0:443";
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.Start();
+            process.WaitForExit();
+            if (process.ExitCode == 0) return true;
+            else return false;
+        }
+
+        static bool AddSSLBinding(string certHash)
+        {
+            Process process = new Process();
+            process.StartInfo.FileName = "netsh";
+            process.StartInfo.Arguments = string.Format("http add sslcert ipport=0.0.0.0:443 certhash={0} appid={{{1}}}", certHash, Guid.NewGuid());
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.Start();
+            process.WaitForExit();
+            if (process.ExitCode == 0) return true;
+            else return false;
+        }
 
         static bool StartWebServer()
         {
