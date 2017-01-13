@@ -16,17 +16,20 @@ namespace Tulpep.InternetSimulator
 {
     class Program
     {
-        private static Options _options = new Options();
+        public static Options Options { get; set; }
+
         private const string AUTO_IP_ADDRESS = "DHCP";
         private const string SSL_FRIENDLY_NAME = "Internet Simulator";
         private static Dictionary<string, string> _nicsOriginalConfiguration = new Dictionary<string, string>();
         private static DnsClient _upStreamDnsClient = null;
-        static int Main(string[] args)
+        
+        static void Main(string[] args)
         {
             //If arguments are not correct, exit
-            if (!CommandLine.Parser.Default.ParseArguments(args, _options))
+            Options = new Options();
+            if (!CommandLine.Parser.Default.ParseArguments(args, Options))
             {
-                return 1;
+                Exit(1);
             };
 
             //Handling the Ctr + C exit event
@@ -41,29 +44,43 @@ namespace Tulpep.InternetSimulator
             if(_nicsOriginalConfiguration.Count == 0)
             {
                 WriteInConsole("Not Enable or valid Network Adpaters found");
-                return 1;
+                Exit(1);
             }
 
-            string certHash = InstallCertificate(new List<string> { "larnia.co", "popo.com", "www.msftncsi.com" });
-            if (String.IsNullOrWhiteSpace(certHash))
+            IEnumerable<string> domains = Options.GetUrlMappings().Select(x => new Uri(x.Key).Host);
+            if(domains.Count() > 0)
             {
-                WriteInConsole("Cannot manage SSL Certificates in your System");
-                return 1;
+                string certHash = InstallCertificate(domains);
+                if (String.IsNullOrWhiteSpace(certHash))
+                {
+                    WriteInConsole("Cannot manage SSL Certificates in your System");
+                    Exit(1);
+                }
+
+                if (!AddSSLBinding(certHash))
+                    Exit(1);
             }
 
-            if (AddSSLBinding(certHash) && StartWebServer() && StartDnsServer() && ChangeInterfacesToLocalDns())
+            if (StartWebServer() && StartDnsServer() && ChangeInterfacesToLocalDns())
             {
                 Console.WriteLine("Internet Simulator Running. Press Ctrl + C to Stop it");
                 exitEvent.WaitOne();
-                return 0;
+                Exit(0);
             }
             else
             {
                 ExitCleanUp();
-                return 1;
+                Exit(1);
+
             }
+
         }
 
+
+        public static void Exit(int exitCode)
+        {
+            Environment.Exit(exitCode);
+        }
 
         static void ExitCleanUp()
         {
@@ -242,7 +259,9 @@ namespace Tulpep.InternetSimulator
             if (createCertificatesPs.HadErrors) return String.Empty;
             string certHash = createCertifiacateResult[0].Properties["Thumbprint"].Value.ToString();
 
-            WriteInConsole("SLL Certificate created and saved in your Computer Personal Store. Thumbprint " + certHash);
+            WriteInConsole(string.Format("SLL Certificate saved in your Computer Personal Store. Domains: {0}. Thumbprint: {1}.",
+                           string.Join(", ", domains), 
+                           certHash));
 
             string copyCertScript = string.Format(@"
                     $srcStore = New-Object System.Security.Cryptography.X509Certificates.X509Store ""My"", ""LocalMachine""
@@ -351,9 +370,9 @@ namespace Tulpep.InternetSimulator
         }
 
 
-        static void WriteInConsole(string message)
+        public static void WriteInConsole(string message)
         {
-            if (_options.Verbose) Console.WriteLine(message);
+            if (Options.Verbose) Console.WriteLine(message);
         }
 
 

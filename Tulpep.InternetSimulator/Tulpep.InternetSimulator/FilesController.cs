@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Web.Http;
+using Tulpep.InternetSimulator;
 
 namespace OwinSelfhostSample
 {
@@ -11,7 +12,7 @@ namespace OwinSelfhostSample
         public HttpResponseMessage Get()
         {
             string requestedUri = Request.RequestUri.AbsoluteUri;
-            if(requestedUri == "http://www.msftncsi.com/ncsi.txt")
+            if(Program.Options.Ncsi && requestedUri == "http://www.msftncsi.com/ncsi.txt")
             {
                 HttpResponseMessage ncsiResponse = new HttpResponseMessage(HttpStatusCode.OK);
                 ncsiResponse.Content = new StringContent("Microsoft NCSI");
