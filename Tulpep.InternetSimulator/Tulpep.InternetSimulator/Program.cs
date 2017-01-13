@@ -23,6 +23,13 @@ namespace Tulpep.InternetSimulator
         private static DnsClient _upStreamDnsClient = null;
         static int Main(string[] args)
         {
+            //If arguments are not correct, exit
+            if (!CommandLine.Parser.Default.ParseArguments(args, _options))
+            {
+                return 1;
+            };
+
+            //Handling the Ctr + C exit event
             var exitEvent = new ManualResetEvent(false);
             Console.CancelKeyPress += (sender, eventArgs) => {
                 ExitCleanUp();
@@ -30,20 +37,17 @@ namespace Tulpep.InternetSimulator
                 exitEvent.Set();
             };
 
-
-            CommandLine.Parser.Default.ParseArguments(args, _options);
-
             GetDnsConfiguration();
             if(_nicsOriginalConfiguration.Count == 0)
             {
-                Console.WriteLine("Not Enable or valid Network Adpaters found");
+                WriteInConsole("Not Enable or valid Network Adpaters found");
                 return 1;
             }
 
             string certHash = InstallCertificate(new List<string> { "larnia.co", "popo.com", "www.msftncsi.com" });
             if (String.IsNullOrWhiteSpace(certHash))
             {
-                Console.WriteLine("Cannot manage SSL Certificates in your System");
+                WriteInConsole("Cannot manage SSL Certificates in your System");
                 return 1;
             }
 
@@ -63,7 +67,7 @@ namespace Tulpep.InternetSimulator
 
         static void ExitCleanUp()
         {
-            WriteInConsole("Ctrl + C pressed. Stopping the Internet Simulator. Please wait");
+            Console.WriteLine("Ctrl + C pressed. Stopping the Internet Simulator");
             ChangeInterfacesToOriginalDnsConfig();
             RemoveSSLBinding();
             RemoveCertificates();
@@ -176,13 +180,14 @@ namespace Tulpep.InternetSimulator
         }
 
 
-        static async Task OnDnsClientConnected(object sender, ClientConnectedEventArgs e)
+        static Task OnDnsClientConnected(object sender, ClientConnectedEventArgs e)
         {
             if (!IPAddress.IsLoopback(e.RemoteEndpoint.Address))
             {
                 e.RefuseConnect = true;
                 WriteInConsole("Denied access to DNS Client " + e.RemoteEndpoint.Address);
             }
+            return Task.Delay(0);
         }
 
         static async Task OnDnsQueryReceived(object sender, QueryReceivedEventArgs e)

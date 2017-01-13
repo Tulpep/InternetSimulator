@@ -1,15 +1,15 @@
 ﻿using CommandLine;
 using CommandLine.Text;
+using System.Collections.Generic;
 
 namespace Tulpep.InternetSimulator
 {
     public class Options
     {
-        [Option('r', "read", Required = true,
-          HelpText = "Input file to be processed.")]
-        public string InputFile { get; set; }
+        [ValueList(typeof(List<string>))]
+        public IList<string> Urls { get; set; }
 
-        [Option('v', "verbose", DefaultValue = true,
+        [Option('v', "verbose", DefaultValue = false,
           HelpText = "Prints all messages to standard output.")]
         public bool Verbose { get; set; }
 
