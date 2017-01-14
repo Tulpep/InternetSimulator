@@ -3,6 +3,7 @@ using CommandLine.Text;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace Tulpep.InternetSimulator
 {
@@ -27,6 +28,20 @@ namespace Tulpep.InternetSimulator
               (HelpText current) => HelpText.DefaultParsingErrorsHandler(this, current));
         }
 
+
+        public Dictionary<string, string> UrlMappings { get; set; }
+        public IEnumerable<string> Domains { get; set; }
+
+        public void ProcessMappings()
+        {
+            UrlMappings = GetUrlMappings();
+            if(UrlMappings != null)
+            {
+                Domains = UrlMappings.Select(x => new Uri(x.Key).Host);
+            }
+        }
+
+
         public Dictionary<string,string> GetUrlMappings()
         { 
             Dictionary<string,string> result = new Dictionary<string, string>();
@@ -35,39 +50,29 @@ namespace Tulpep.InternetSimulator
                 string[] spplitedString = pair.Split(new char[] { ',' },2);
                 if(spplitedString.Length < 2)
                 {
-                    Program.WriteInConsole(string.Format("Cannot parse entry {0}", pair));
-                    Program.Exit(1);
+                    Logging.WriteAlways("Cannot parse entry {0}", pair);
+                    return null;
                 }
 
                 string url = spplitedString[0];
                 string filePath = spplitedString[1];
 
-                Uri uriResult;
-                bool urlIsHTTPorHTTPs  = Uri.TryCreate(url, UriKind.Absolute, out uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
-                if (!urlIsHTTPorHTTPs)
+                if (!IsValidUrl(url))
                 {
-                    Program.WriteInConsole(string.Format("{0} is not a valid HTTP or HTTPS url", url));
-                    Program.Exit(1);
-                }
-
-                bool filePathExists;
-                try
-                {
-                    filePathExists = File.Exists(filePath);
-                }
-                catch
-                {
-                    filePathExists = false;
-                }
-
-                if (!filePathExists)
-                {
-                    Program.WriteInConsole(string.Format("{0} file does not exits", filePath));
-                    Program.Exit(1);
+                    Logging.WriteAlways("{0} is not a valid HTTP or HTTPS url", url);
+                    return null;
                 }
 
 
-                Program.WriteInConsole(string.Format("{0} -> {1}", url, filePath));
+
+                if (!IsValidFilePath(filePath))
+                {
+                    Logging.WriteAlways("{0} file does not exits", filePath);
+                    return null;
+                }
+
+
+                Logging.WriteVerbose("{0} -> {1}", url, filePath);
                 result.Add(url, filePath);
             }
 
@@ -75,6 +80,27 @@ namespace Tulpep.InternetSimulator
             return result;
         }
 
+
+        private bool IsValidUrl(string url)
+        {
+            Uri uriResult;
+            return Uri.TryCreate(url, UriKind.Absolute, out uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+        }
+        
+        private bool IsValidFilePath(string filePath)
+        {
+            bool result;
+            try
+            {
+                result = File.Exists(filePath);
+            }
+            catch
+            {
+                result = false;
+            }
+
+            return result;
+        }
     }
 
 }

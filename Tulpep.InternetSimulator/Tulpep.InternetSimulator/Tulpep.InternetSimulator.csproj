@@ -92,11 +92,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Certificates.cs" />
+    <Compile Include="LocalDnsServer.cs" />
+    <Compile Include="Logging.cs" />
+    <Compile Include="NetworkAdaptersConfiguration.cs" />
     <Compile Include="Options.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="WebServerStartup.cs" />
-    <Compile Include="FilesController.cs" />
+    <Compile Include="WebServer\LocalWebServer.cs" />
+    <Compile Include="WebServer\WebServerStartup.cs" />
+    <Compile Include="WebServer\FilesController.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

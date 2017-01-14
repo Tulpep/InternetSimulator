@@ -5,7 +5,7 @@ using System.Text;
 using System.Web.Http;
 using Tulpep.InternetSimulator;
 
-namespace OwinSelfhostSample
+namespace Tulpep.InternetSimulator.WebServer
 {
     public class FilesController : ApiController
     {

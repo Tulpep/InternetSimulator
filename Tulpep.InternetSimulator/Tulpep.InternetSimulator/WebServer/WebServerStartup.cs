@@ -1,7 +1,7 @@
 ﻿using Owin;
 using System.Web.Http;
 
-namespace Tulpep.InternetSimulator
+namespace Tulpep.InternetSimulator.WebServer
 {
     class WebServerStartup
     {
