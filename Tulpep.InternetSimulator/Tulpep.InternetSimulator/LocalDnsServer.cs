@@ -11,6 +11,7 @@ namespace Tulpep.InternetSimulator
     {
         private DnsServer _server;
         private DnsClient _upStreamDnsClient;
+        private static DomainName _ncsiDomain = DomainName.Parse("www.msftncsi.com");
 
         public LocalDnsServer(IEnumerable<string> simulatedDomains, IEnumerable<IPAddress> upStreamServers)
         {
@@ -61,8 +62,7 @@ namespace Tulpep.InternetSimulator
             DnsMessage response = message.CreateResponseInstance();
 
             //If domain match return localhost
-            if ((Program.Options.Ncsi && question.Name.Equals(DomainName.Parse("www.msftncsi.com"))) ||
-                domains.Any(x => x.Equals(question.Name)))
+            if ((Program.Options.Ncsi && question.Name.Equals(_ncsiDomain)) || domains.Any(x => x.Equals(question.Name)))
             {
                 if (question.RecordType == RecordType.A)
                 {
