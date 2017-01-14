@@ -72,7 +72,7 @@ namespace Tulpep.InternetSimulator
                 else if (question.RecordType == RecordType.Aaaa)
                 {
                     response.ReturnCode = ReturnCode.NoError;
-                    response.AnswerRecords.Add(new ARecord(question.Name, 10, IPAddress.IPv6Loopback));
+                    response.AnswerRecords.Add(new AaaaRecord(question.Name, 10, IPAddress.IPv6Loopback));
                 }
             }
             else if (_upStreamDnsClient != null)

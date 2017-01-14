@@ -53,7 +53,7 @@ namespace Tulpep.InternetSimulator
             LocalWebServer httpServer = new LocalWebServer("http://*:80", "HTTP Web Server running at 80 TCP Port");
             LocalWebServer httpsServer = new LocalWebServer("https://*:443", "HTTPS Web Server running at 443 TCP Port");
             LocalDnsServer dnsServer = new LocalDnsServer(Options.Domains, nicConfig.DnsAddressess);
-            if (httpServer.Start() && httpsServer.Start() && dnsServer.Start() && nicConfig.ChangeInterfacesToLocalDns())
+            if (nicConfig.ChangeInterfacesToLocalDns() && dnsServer.Start() && httpServer.Start() && httpsServer.Start())
             {
                 Logging.WriteAlways("Internet Simulator Running. Press Ctrl + C to Stop it");
                 exitEvent.WaitOne();
@@ -71,12 +71,12 @@ namespace Tulpep.InternetSimulator
         static void CleanUp(NetworkAdaptersConfiguration nicConfig, Certificates certs)
         {
             Logging.WriteAlways("Ctrl + C pressed. Stopping the Internet Simulator");
-            if(nicConfig != null) nicConfig.ChangeInterfacesToOriginalDnsConfig();
             if(certs != null)
             {
                 certs.RemoveSSLBinding();
                 certs.RemoveCertificates();
             }
+            if (nicConfig != null) nicConfig.ChangeInterfacesToOriginalDnsConfig();
         }
 
 

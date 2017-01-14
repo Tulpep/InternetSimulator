@@ -5,6 +5,7 @@ using System.Text;
 using System.Web.Http;
 using Tulpep.InternetSimulator;
 using System.Linq;
+using System.Net.Http.Headers;
 
 namespace Tulpep.InternetSimulator.WebServer
 {
@@ -25,6 +26,7 @@ namespace Tulpep.InternetSimulator.WebServer
 
             HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.OK);
             response.Content = new StreamContent(new FileStream(returnFile, FileMode.Open, FileAccess.Read));
+            response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
             return response;
         }
     }
