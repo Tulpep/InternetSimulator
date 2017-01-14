@@ -6,7 +6,7 @@ namespace Tulpep.InternetSimulator
     {
         public static void WriteAlways(string text, params object[] args)
         {
-            if (Program.Options.Verbose) Console.WriteLine(string.Format(text, args));
+            Console.WriteLine(string.Format(text, args));
         }
 
         public static void WriteVerbose(string text, params object[] args)
