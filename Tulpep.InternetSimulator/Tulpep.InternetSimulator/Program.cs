@@ -47,6 +47,7 @@ namespace Tulpep.InternetSimulator
                 Exit(1);
             }
 
+
             IEnumerable<string> domains = Options.GetUrlMappings().Select(x => new Uri(x.Key).Host);
             if(domains.Count() > 0)
             {
@@ -61,7 +62,7 @@ namespace Tulpep.InternetSimulator
                     Exit(1);
             }
 
-            if (StartWebServer() && StartDnsServer() && ChangeInterfacesToLocalDns())
+            if (StartWebServer() && StartDnsServer(domains) && ChangeInterfacesToLocalDns())
             {
                 Console.WriteLine("Internet Simulator Running. Press Ctrl + C to Stop it");
                 exitEvent.WaitOne();
@@ -178,13 +179,13 @@ namespace Tulpep.InternetSimulator
         }
 
 
-        static bool StartDnsServer()
+        static bool StartDnsServer(IEnumerable<string> domains)
         {
             try
             {
                 DnsServer server = new DnsServer(10, 10);
                 server.ClientConnected += OnDnsClientConnected;
-                server.QueryReceived += OnDnsQueryReceived;
+                server.QueryReceived += (sender, e) => OnDnsQueryReceived(e, domains.Select(x => DomainName.Parse(x)));
                 server.Start();
                 WriteInConsole("DNS Server started");
                 return true;
@@ -207,7 +208,7 @@ namespace Tulpep.InternetSimulator
             return Task.Delay(0);
         }
 
-        static async Task OnDnsQueryReceived(object sender, QueryReceivedEventArgs e)
+        static async Task OnDnsQueryReceived(QueryReceivedEventArgs e, IEnumerable<DomainName> domains)
         {
             DnsMessage message = e.Query as DnsMessage;
 
@@ -217,14 +218,19 @@ namespace Tulpep.InternetSimulator
             DnsMessage response = message.CreateResponseInstance();
 
             //If domain match return localhost
-            if (question.Name.Equals(DomainName.Parse("www.msftncsi.com")) || question.Name.Equals(DomainName.Parse("larnia.co")) || question.Name.Equals(DomainName.Parse("popo.com")))
+            if ((Options.Ncsi && question.Name.Equals(DomainName.Parse("www.msftncsi.com"))) ||
+                domains.Any(x => x.Equals(question.Name)))
             {
-                response.ReturnCode = ReturnCode.NoError;
-
                 if (question.RecordType == RecordType.A)
+                {
+                    response.ReturnCode = ReturnCode.NoError;
                     response.AnswerRecords.Add(new ARecord(question.Name, 10, IPAddress.Loopback));
+                }
                 else if(question.RecordType == RecordType.Aaaa)
-                    response.AnswerRecords.Add(new AaaaRecord(question.Name, 10, IPAddress.IPv6Loopback));
+                {
+                    response.ReturnCode = ReturnCode.NoError;
+                    response.AnswerRecords.Add(new ARecord(question.Name, 10, IPAddress.Loopback));
+                }
             }
             else if(_upStreamDnsClient != null)
             {

@@ -12,7 +12,7 @@ namespace OwinSelfhostSample
         public HttpResponseMessage Get()
         {
             string requestedUri = Request.RequestUri.AbsoluteUri;
-            if(Program.Options.Ncsi && requestedUri == "http://www.msftncsi.com/ncsi.txt")
+            if(Program.Options.Ncsi && requestedUri == "http://www.msftncsi.com/ncsi.txt" )
             {
                 HttpResponseMessage ncsiResponse = new HttpResponseMessage(HttpStatusCode.OK);
                 ncsiResponse.Content = new StringContent("Microsoft NCSI");
