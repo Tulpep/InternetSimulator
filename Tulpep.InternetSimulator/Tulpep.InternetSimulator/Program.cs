@@ -1,15 +1,4 @@
-﻿using ARSoft.Tools.Net;
-using ARSoft.Tools.Net.Dns;
-using Microsoft.Owin.Hosting;
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Threading.Tasks;
-using System.Linq;
-using System.Management;
-using System.Net.NetworkInformation;
-using System.Diagnostics;
-using System.Management.Automation;
+﻿using System;
 using System.Threading;
 using Tulpep.InternetSimulator.WebServer;
 
