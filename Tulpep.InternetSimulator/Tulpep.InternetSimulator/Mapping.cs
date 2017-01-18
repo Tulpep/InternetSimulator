@@ -11,9 +11,7 @@ namespace Tulpep.InternetSimulator
         public string OriginalEntry { get; set; }
         public bool ParsingSuccess { get; set; }
         public string ParsingMessage { get; set; }
-        public string Uri { get; set; }
-        public string UriScheme { get; set; }
-        public string Domain { get; set; }
+        public Uri Uri { get; set; }
         public string FilePath { get; set; }
         public FileBehavior Behavior { get; set; }
 

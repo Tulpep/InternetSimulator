@@ -23,9 +23,14 @@ namespace Tulpep.InternetSimulator
             else return 1;
 
 
-            if(Options.Mappings.Any(x => x.ParsingSuccess == false))
+            IEnumerable<Mapping> errorParsing = Options.Mappings.Where(x => x.ParsingSuccess == false);
+            if(errorParsing.Count() > 0)
             {
-                Logging.WriteAlways("Fail parsing");
+                Logging.WriteAlways("Fail parsing entries : ");
+                foreach(Mapping wrongEntry in errorParsing)
+                {
+                    Logging.WriteAlways(wrongEntry.OriginalEntry);
+                }
                 return 1;
             }
 
@@ -53,7 +58,7 @@ namespace Tulpep.InternetSimulator
             }
 
 
-            var domains = Options.Mappings.Select(x => x.Domain).Distinct();
+            var domains = Options.Mappings.Select(x => x.Uri.Host).Distinct();
             certs = new Certificates(domains);
             if (String.IsNullOrWhiteSpace(certs.CertHash))
             {

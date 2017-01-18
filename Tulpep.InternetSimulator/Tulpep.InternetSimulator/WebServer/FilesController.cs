@@ -11,8 +11,7 @@ namespace Tulpep.InternetSimulator.WebServer
     {
         public HttpResponseMessage Get()
         {
-            string requestedUri = Request.RequestUri.AbsoluteUri.ToLowerInvariant().TrimEnd('/');
-            if(Program.Options.Ncsi && requestedUri == "http://www.msftncsi.com/ncsi.txt" )
+            if (Program.Options.Ncsi && Request.RequestUri.AbsoluteUri == "http://www.msftncsi.com/ncsi.txt" )
             {
                 HttpResponseMessage ncsiResponse = new HttpResponseMessage(HttpStatusCode.OK);
                 ncsiResponse.Content = new StringContent("Microsoft NCSI");
@@ -20,7 +19,7 @@ namespace Tulpep.InternetSimulator.WebServer
             }
 
 
-            Mapping mapping = Program.Options.Mappings.FirstOrDefault(x => x.Uri == requestedUri);
+            Mapping mapping = Program.Options.Mappings.FirstOrDefault(x => x.Uri.AbsoluteUri == Request.RequestUri.AbsoluteUri.ToLowerInvariant());
             if (mapping == null || !File.Exists(mapping.FilePath)) return Request.CreateResponse(HttpStatusCode.NotFound);
 
 

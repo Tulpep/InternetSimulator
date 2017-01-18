@@ -42,6 +42,7 @@ namespace Tulpep.InternetSimulator
 
         public void GetUrlMappings(string[] inputArray, FileBehavior fileBehavior)
         {
+            if (inputArray == null) return;
             foreach (string pair in inputArray)
             {
                 Mapping mapping = new Mapping{ OriginalEntry = pair, Behavior = fileBehavior, ParsingSuccess = false };
@@ -52,10 +53,18 @@ namespace Tulpep.InternetSimulator
                     continue;
                 }
 
-                mapping.Uri = spplitedString[0].ToLowerInvariant();
-                mapping.Domain = new Uri(mapping.Uri).Host;
-                mapping.UriScheme = GetUriScheme(mapping.Uri);
-                if (mapping.UriScheme != Uri.UriSchemeHttp &&  mapping.UriScheme != Uri.UriSchemeHttps)
+                string uriString = spplitedString[0].ToLowerInvariant();
+                try
+                {
+                    mapping.Uri = new Uri(uriString, UriKind.Absolute);
+                }
+                catch
+                {
+                    mapping.ParsingMessage = string.Format("{0} is not a valid url", uriString);
+                    continue;
+                }
+
+                if (mapping.Uri.Scheme != Uri.UriSchemeHttp && mapping.Uri.Scheme != Uri.UriSchemeHttps)
                 {
                     mapping.ParsingMessage = string.Format("{0} is not a valid HTTP or HTTPS url", mapping.Uri);
                     continue;
@@ -74,12 +83,6 @@ namespace Tulpep.InternetSimulator
             }
         }
 
-        private string GetUriScheme(string url)
-        {
-            Uri uriResult;
-            Uri.TryCreate(url, UriKind.Absolute, out uriResult);
-            return uriResult.Scheme;
-        }
         
         private bool IsValidFilePath(string filePath)
         {
