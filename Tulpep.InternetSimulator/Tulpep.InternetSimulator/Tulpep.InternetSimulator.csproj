@@ -93,6 +93,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Certificates.cs" />
+    <Compile Include="Mapping.cs" />
     <Compile Include="LocalDnsServer.cs" />
     <Compile Include="Logging.cs" />
     <Compile Include="NetworkAdaptersConfiguration.cs" />

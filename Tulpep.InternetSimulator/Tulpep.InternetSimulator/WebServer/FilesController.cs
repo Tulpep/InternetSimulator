@@ -19,23 +19,17 @@ namespace Tulpep.InternetSimulator.WebServer
                 return ncsiResponse;
             }
 
-            bool isFile = false;
-            string filePath = Program.Options.WebsMapping.FirstOrDefault(x => x.Key.ToLowerInvariant() == requestedUri).Value;
-            if (string.IsNullOrWhiteSpace(filePath))
-            {
-                isFile = true;
-                filePath = Program.Options.FilesMapping.FirstOrDefault(x => x.Key.ToLowerInvariant() == requestedUri).Value;
 
-            }
-            if (!File.Exists(filePath)) return Request.CreateResponse(HttpStatusCode.NotFound);
+            Mapping mapping = Program.Options.Mappings.FirstOrDefault(x => x.Uri == requestedUri);
+            if (mapping == null || !File.Exists(mapping.FilePath)) return Request.CreateResponse(HttpStatusCode.NotFound);
 
 
             HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.OK);
-            response.Content = new StreamContent(new FileStream(filePath, FileMode.Open, FileAccess.Read));
-            if (isFile)
+            response.Content = new StreamContent(new FileStream(mapping.FilePath, FileMode.Open, FileAccess.Read));
+            if (mapping.Behavior == FileBehavior.File)
             {
                 response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-                response.Content.Headers.ContentDisposition = new ContentDispositionHeaderValue("attachment") { FileName = Path.GetFileName(filePath) };
+                response.Content.Headers.ContentDisposition = new ContentDispositionHeaderValue("attachment") { FileName = Path.GetFileName(mapping.FilePath) };
             }
             return response;
         }

@@ -22,15 +22,16 @@ namespace Tulpep.InternetSimulator
             if (Parser.Default.ParseArguments(args, Options)) Options.ProcessMappings();
             else return 1;
 
-            if (Options.FailParsing)
+
+            if(Options.Mappings.Any(x => x.ParsingSuccess == false))
+            {
+                Logging.WriteAlways("Fail parsing");
                 return 1;
+            }
 
 
             //Check for duplicates
-            List<string> allUrls = new List<string>();
-            allUrls.AddRange(Options.WebsMapping.Select(x => x.Key));
-            allUrls.AddRange(Options.FilesMapping.Select(x => x.Key));
-            if(allUrls.GroupBy(x => x).Any(g => g.Count() > 1))
+            if(Options.Mappings.GroupBy(x => x.Uri).Any(g => g.Count() > 1))
             {
                 Logging.WriteAlways("Dupicated entries");
                 return 1;
@@ -52,7 +53,8 @@ namespace Tulpep.InternetSimulator
             }
 
 
-            certs = new Certificates(Options.Domains);
+            var domains = Options.Mappings.Select(x => x.Domain).Distinct();
+            certs = new Certificates(domains);
             if (String.IsNullOrWhiteSpace(certs.CertHash))
             {
                 Logging.WriteAlways("Cannot manage SSL Certificates in your System");
@@ -67,7 +69,7 @@ namespace Tulpep.InternetSimulator
 
             LocalWebServer httpServer = new LocalWebServer("http://*:80", "HTTP Web Server running at 80 TCP Port");
             LocalWebServer httpsServer = new LocalWebServer("https://*:443", "HTTPS Web Server running at 443 TCP Port");
-            LocalDnsServer dnsServer = new LocalDnsServer(Options.Domains, nicConfig.DnsAddressess);
+            LocalDnsServer dnsServer = new LocalDnsServer(domains, nicConfig.DnsAddressess);
             if (nicConfig.ChangeInterfacesToLocalDns() && dnsServer.Start() && httpServer.Start() && httpsServer.Start())
             {
                 Logging.WriteAlways("Internet Simulator Running. Press Ctrl + C to Stop it");

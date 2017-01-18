@@ -3,7 +3,6 @@ using CommandLine.Text;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace Tulpep.InternetSimulator
 {
@@ -32,75 +31,54 @@ namespace Tulpep.InternetSimulator
               (HelpText current) => HelpText.DefaultParsingErrorsHandler(this, current));
         }
 
-        public Dictionary<string, string> WebsMapping { get; set; }
-        public Dictionary<string, string> FilesMapping { get; set; }
-
-        public bool FailParsing { get; set; }
-
-        public IEnumerable<string> Domains { get; set; }
+        public List<Mapping> Mappings { get; set; }
 
         public void ProcessMappings()
         {
-            WebsMapping = GetUrlMappings(WebpagesArray);
-            FilesMapping = GetUrlMappings(FilesArray);
-            if(!FailParsing)
-            {
-                List<string> domainsToSimulate = new List<string>();
-                if(WebsMapping != null)
-                    domainsToSimulate.AddRange(WebsMapping.Select(x => new Uri(x.Key).Host));
-                if(FilesMapping != null)
-                    domainsToSimulate.AddRange(FilesMapping.Select(x => new Uri(x.Key).Host));
-                Domains = domainsToSimulate.Distinct();
-            }
+            Mappings = new List<Mapping>();
+            GetUrlMappings(WebpagesArray, FileBehavior.Web);
+            GetUrlMappings(FilesArray, FileBehavior.File);
         }
 
-
-        public Dictionary<string,string> GetUrlMappings(string[] inputArray)
+        public void GetUrlMappings(string[] inputArray, FileBehavior fileBehavior)
         {
-            Dictionary<string,string> result = new Dictionary<string, string>();
             foreach (string pair in inputArray)
             {
+                Mapping mapping = new Mapping{ OriginalEntry = pair, Behavior = fileBehavior, ParsingSuccess = false };
                 string[] spplitedString = pair.Split(new char[] { ',' },2);
                 if(spplitedString.Length < 2)
                 {
-                    Logging.WriteAlways("Cannot parse entry {0}", pair);
-                    FailParsing = true;
-                    break;
+                    mapping.ParsingMessage = string.Format("Cannot parse entry {0}", pair);
+                    continue;
                 }
 
-                string url = spplitedString[0];
-                string filePath = spplitedString[1];
-
-                if (!IsValidUrl(url))
+                mapping.Uri = spplitedString[0].ToLowerInvariant();
+                mapping.Domain = new Uri(mapping.Uri).Host;
+                mapping.UriScheme = GetUriScheme(mapping.Uri);
+                if (mapping.UriScheme != Uri.UriSchemeHttp &&  mapping.UriScheme != Uri.UriSchemeHttps)
                 {
-                    Logging.WriteAlways("{0} is not a valid HTTP or HTTPS url", url);
-                    FailParsing = true;
-                    break;
+                    mapping.ParsingMessage = string.Format("{0} is not a valid HTTP or HTTPS url", mapping.Uri);
+                    continue;
                 }
 
-
-
-                if (!IsValidFilePath(filePath))
+                mapping.FilePath = spplitedString[1];
+                if (!IsValidFilePath(mapping.FilePath))
                 {
-                    Logging.WriteAlways("{0} file does not exits", filePath);
-                    FailParsing = true;
-                    break;
+                    mapping.ParsingMessage = string.Format("{0} file does not exits", mapping.FilePath);
+                    continue;
                 }
 
+                mapping.ParsingSuccess = true;
 
-                Logging.WriteVerbose("{0} -> {1}", url, filePath);
-                result.Add(url, filePath);
+                Mappings.Add(mapping);
             }
-
-
-            return result;
         }
 
-
-        private bool IsValidUrl(string url)
+        private string GetUriScheme(string url)
         {
             Uri uriResult;
-            return Uri.TryCreate(url, UriKind.Absolute, out uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+            Uri.TryCreate(url, UriKind.Absolute, out uriResult);
+            return uriResult.Scheme;
         }
         
         private bool IsValidFilePath(string filePath)
