@@ -9,8 +9,12 @@ namespace Tulpep.InternetSimulator
 {
     public class Options
     {
-        [ValueList(typeof(List<string>))]
-        public IList<string> Urls { get; set; }
+
+        [OptionArray("webs", HelpText = "List of websites")]
+        public string[] WebpagesArray { get; set; }
+
+        [OptionArray("files", HelpText = "List of files")]
+        public string[] FilesArray { get; set; }
 
         [Option('v', "verbose", DefaultValue = false, HelpText = "Prints all messages to standard output.")]
         public bool Verbose { get; set; }
@@ -28,30 +32,40 @@ namespace Tulpep.InternetSimulator
               (HelpText current) => HelpText.DefaultParsingErrorsHandler(this, current));
         }
 
+        public Dictionary<string, string> WebsMapping { get; set; }
+        public Dictionary<string, string> FilesMapping { get; set; }
 
-        public Dictionary<string, string> UrlMappings { get; set; }
+        public bool FailParsing { get; set; }
+
         public IEnumerable<string> Domains { get; set; }
 
         public void ProcessMappings()
         {
-            UrlMappings = GetUrlMappings();
-            if(UrlMappings != null)
+            WebsMapping = GetUrlMappings(WebpagesArray);
+            FilesMapping = GetUrlMappings(FilesArray);
+            if(!FailParsing)
             {
-                Domains = UrlMappings.Select(x => new Uri(x.Key).Host);
+                List<string> domainsToSimulate = new List<string>();
+                if(WebsMapping != null)
+                    domainsToSimulate.AddRange(WebsMapping.Select(x => new Uri(x.Key).Host));
+                if(FilesMapping != null)
+                    domainsToSimulate.AddRange(FilesMapping.Select(x => new Uri(x.Key).Host));
+                Domains = domainsToSimulate.Distinct();
             }
         }
 
 
-        public Dictionary<string,string> GetUrlMappings()
-        { 
+        public Dictionary<string,string> GetUrlMappings(string[] inputArray)
+        {
             Dictionary<string,string> result = new Dictionary<string, string>();
-            foreach (string pair in Urls)
+            foreach (string pair in inputArray)
             {
                 string[] spplitedString = pair.Split(new char[] { ',' },2);
                 if(spplitedString.Length < 2)
                 {
                     Logging.WriteAlways("Cannot parse entry {0}", pair);
-                    return null;
+                    FailParsing = true;
+                    break;
                 }
 
                 string url = spplitedString[0];
@@ -60,7 +74,8 @@ namespace Tulpep.InternetSimulator
                 if (!IsValidUrl(url))
                 {
                     Logging.WriteAlways("{0} is not a valid HTTP or HTTPS url", url);
-                    return null;
+                    FailParsing = true;
+                    break;
                 }
 
 
@@ -68,7 +83,8 @@ namespace Tulpep.InternetSimulator
                 if (!IsValidFilePath(filePath))
                 {
                     Logging.WriteAlways("{0} file does not exits", filePath);
-                    return null;
+                    FailParsing = true;
+                    break;
                 }
 
 

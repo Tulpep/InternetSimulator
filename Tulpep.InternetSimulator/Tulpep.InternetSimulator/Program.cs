@@ -3,6 +3,7 @@ using System;
 using System.Threading;
 using Tulpep.InternetSimulator.WebServer;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace Tulpep.InternetSimulator
 {
@@ -21,9 +22,17 @@ namespace Tulpep.InternetSimulator
             if (Parser.Default.ParseArguments(args, Options)) Options.ProcessMappings();
             else return 1;
 
-            if (Options.UrlMappings.Count() == 0)
+            if (Options.FailParsing)
+                return 1;
+
+
+            //Check for duplicates
+            List<string> allUrls = new List<string>();
+            allUrls.AddRange(Options.WebsMapping.Select(x => x.Key));
+            allUrls.AddRange(Options.FilesMapping.Select(x => x.Key));
+            if(allUrls.GroupBy(x => x).Any(g => g.Count() > 1))
             {
-                Logging.WriteAlways("Not mappings found");
+                Logging.WriteAlways("Dupicated entries");
                 return 1;
             }
 
