@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CommandLine;
+using System;
 using System.Threading;
 using Tulpep.InternetSimulator.WebServer;
 
@@ -16,7 +17,7 @@ namespace Tulpep.InternetSimulator
 
             //If arguments are not correct, exit
             Options = new Options();
-            if (CommandLine.Parser.Default.ParseArguments(args, Options)) Options.ProcessMappings();
+            if (Parser.Default.ParseArguments(args, Options)) Options.ProcessMappings();
             else return 1;
 
             if (Options.UrlMappings == null) return 1;
