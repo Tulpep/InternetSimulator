@@ -2,6 +2,7 @@
 using System;
 using System.Threading;
 using Tulpep.InternetSimulator.WebServer;
+using System.Linq;
 
 namespace Tulpep.InternetSimulator
 {
@@ -20,7 +21,11 @@ namespace Tulpep.InternetSimulator
             if (Parser.Default.ParseArguments(args, Options)) Options.ProcessMappings();
             else return 1;
 
-            if (Options.UrlMappings == null) return 1;
+            if (Options.UrlMappings.Count() == 0)
+            {
+                Logging.WriteAlways("Not mappings found");
+                return 1;
+            }
 
             //Handling the Ctr + C exit event
             var exitEvent = new ManualResetEvent(false);
