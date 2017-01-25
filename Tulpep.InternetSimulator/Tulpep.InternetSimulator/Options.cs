@@ -9,10 +9,10 @@ namespace Tulpep.InternetSimulator
     public class Options
     {
 
-        [OptionArray("webs", HelpText = "List of websites")]
+        [OptionArray('w', "webs", HelpText = "List of websites")]
         public string[] WebpagesArray { get; set; }
 
-        [OptionArray("files", HelpText = "List of files")]
+        [OptionArray('f', "files", HelpText = "List of files")]
         public string[] FilesArray { get; set; }
 
         [Option('v', "verbose", DefaultValue = false, HelpText = "Prints all messages to standard output.")]

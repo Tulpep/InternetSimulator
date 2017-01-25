@@ -10,12 +10,24 @@ namespace Tulpep.InternetSimulator
     class Program
     {
         public static Options Options { get; set; }
+        private static NetworkAdaptersConfiguration _nicConfig = null;
+        private static Certificates _certs = null;
 
-        
+
         static int Main(string[] args)
         {
-            NetworkAdaptersConfiguration nicConfig = null;
-            Certificates certs = null;
+            AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
+
+            //Handling the Ctr + C
+            var exitEvent = new ManualResetEvent(false);
+            Console.CancelKeyPress += (sender, eventArgs) =>
+            {
+                Logging.WriteAlways("Ctrl + C pressed. Stopping the Internet Simulator");
+                eventArgs.Cancel = true;
+                exitEvent.Set();
+            };
+
+
 
             //If arguments are not correct, exit
             Options = new Options();
@@ -42,16 +54,15 @@ namespace Tulpep.InternetSimulator
                 return 1;
             }
 
-            //Handling the Ctr + C exit event
-            var exitEvent = new ManualResetEvent(false);
-            Console.CancelKeyPress += (sender, eventArgs) => {
-                CleanUp(nicConfig, certs);
-                eventArgs.Cancel = true;
-                exitEvent.Set();
-            };
+            if(Options.Mappings.Count < 1)
+            {
+                Logging.WriteAlways("Not valid mappings provided");
+                return 1;
+            }
 
-            nicConfig = new NetworkAdaptersConfiguration();
-            if(nicConfig.DnsConfig.Count == 0)
+
+            _nicConfig = new NetworkAdaptersConfiguration();
+            if(_nicConfig.DnsConfig.Count == 0)
             {
                 Logging.WriteAlways("Not Enable or valid Network Adpaters found");
                 return 1;
@@ -59,14 +70,14 @@ namespace Tulpep.InternetSimulator
 
 
             var domains = Options.Mappings.Select(x => x.Uri.Host).Distinct();
-            certs = new Certificates(domains);
-            if (String.IsNullOrWhiteSpace(certs.CertHash))
+            _certs = new Certificates(domains);
+            if (string.IsNullOrWhiteSpace(_certs.CertHash))
             {
                 Logging.WriteAlways("Cannot manage SSL Certificates in your System");
                 return 1;
             }
 
-            if (!certs.AddSSLBinding())
+            if (!_certs.AddSSLBinding())
             {
                 Logging.WriteAlways("Cannot modify SSL Bindings in your System");
                 return 1;
@@ -74,34 +85,27 @@ namespace Tulpep.InternetSimulator
 
             LocalWebServer httpServer = new LocalWebServer("http://*:80", "HTTP Web Server running at 80 TCP Port");
             LocalWebServer httpsServer = new LocalWebServer("https://*:443", "HTTPS Web Server running at 443 TCP Port");
-            LocalDnsServer dnsServer = new LocalDnsServer(domains, nicConfig.DnsAddressess);
-            if (nicConfig.ChangeInterfacesToLocalDns() && dnsServer.Start() && httpServer.Start() && httpsServer.Start())
+            LocalDnsServer dnsServer = new LocalDnsServer(domains, _nicConfig.DnsAddressess);
+            if (_nicConfig.ChangeInterfacesToLocalDns() && dnsServer.Start() && httpServer.Start() && httpsServer.Start())
             {
                 Logging.WriteAlways("Internet Simulator Running. Press Ctrl + C to Stop it");
                 exitEvent.WaitOne();
                 return 0;
             }
-            else
-            {
-                CleanUp(nicConfig, certs);
-                return 1;
-            }
+            return 1;
 
         }
 
-
-        static void CleanUp(NetworkAdaptersConfiguration nicConfig, Certificates certs)
+        private static void CurrentDomain_ProcessExit(object sender, EventArgs e)
         {
-            Logging.WriteAlways("Ctrl + C pressed. Stopping the Internet Simulator");
-            if(certs != null)
+            if (_certs != null && !string.IsNullOrWhiteSpace(_certs.CertHash))
             {
-                certs.RemoveSSLBinding();
-                certs.RemoveCertificates();
+                _certs.RemoveSSLBinding();
+                _certs.RemoveCertificates();
             }
-            if (nicConfig != null) nicConfig.ChangeInterfacesToOriginalDnsConfig();
-        }
-
-
+            if (_nicConfig != null && _nicConfig.DnsConfig.Count > 1)
+                _nicConfig.ChangeInterfacesToOriginalDnsConfig();
+       } 
 
     }
 }
