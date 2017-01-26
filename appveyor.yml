@@ -29,7 +29,7 @@ environment:
   pfx_password:
     secure: UQSh4nfF0+NlaV7tLriphA==
     
-before_build
+before_build:
  - nuget restore Tulpep.InternetSimulator\Tulpep.InternetSimulator.sln
  
 after_build:
