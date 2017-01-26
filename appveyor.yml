@@ -6,6 +6,9 @@ version: 1.0.{build}
 # Fix line endings in Windows. (runs before repo cloning)
 init:
   - git config --global core.autocrlf input
+  
+cache:
+  - Tulpep.InternetSimulator\packages
 
 # Do not build on tags (GitHub only)
 skip_tags: true
