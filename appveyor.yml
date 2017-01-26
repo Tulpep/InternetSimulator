@@ -39,16 +39,16 @@ after_build:
   - cmd: '"%sign_tool%" sign /f "%pfx_file%" /p %pfx_password% /t %timestamp_url% "%artifact_path%"'
 
 artifacts:
-  - path: '**\bin\Release\SDelete-Gui.exe'
-    name: SDelete-Gui.exe
+  - path: '**\bin\Release\InternetSimulator.exe'
+    name: InternetSimulator.exe
 
 deploy:
-  release: SDelete-Gui-v$(appveyor_build_version)
+  release: InternetSimulator-v$(appveyor_build_version)
   provider: GitHub
   description: ''
   auth_token:
-    secure: Q+20Xaui8ng5gVvoMIkb0g4F0oqMZFVOJo4SNRc+KVN91WkjLe5gTMkifCyDZTlEE
-  artifact: SDelete-Gui.exe
+    secure: Q+20Xaui8ng5gVvoMIkb0g4F0oqMZFVOJo4SNRc+KVN91WkjLe5gTMkifCyDZTlE
+  artifact: InternetSimulator.exe
   draft: false
   prerelease: false
   on:
