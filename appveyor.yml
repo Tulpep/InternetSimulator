@@ -8,7 +8,7 @@ init:
   - git config --global core.autocrlf input
   
 cache:
-  - Tulpep.InternetSimulator\packages
+  - 'C:\projects\internetsimulator\Tulpep.InternetSimulator\packages'
 
 # Do not build on tags (GitHub only)
 skip_tags: true
