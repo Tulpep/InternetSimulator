@@ -1,7 +1,7 @@
 Internet Simulator [![Build Status](https://ci.appveyor.com/api/projects/status/github/Tulpep/InternetSimulator)](https://ci.appveyor.com/project/tulpep/InternetSimulator)
 ===========
 
-###A very simple utily to fully simulate an Internet Connection
+###A very simple utily to fully simulate an Internet Connection and make Windows think it is connected
 
 ##[Download now](https://github.com/Tulpep/InternetSimulator/releases/latest)
 
