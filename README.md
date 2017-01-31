@@ -24,9 +24,11 @@ When running Internet Simulayor, it will:
 5. Backup your Network Cards DNS configuration and change it to `127.0.0.1`. This will start filtering the traffic throught the simulator
 
 When you stop it, it will:
+
 1. Stop DNS, HTTP and HTTPS self hosted services
 2. Delete the temporary generated certificates from your Personal Store and your Trusted Root CA. So no traces in your System.
 3. Restore the Network Interfaces configuration to their original settings
 
-We are active supporting this tool and are open to your PRs.
+
+**Thanks for tying it. We are active supporting this tool and are open to your PRs :smile:**
 
