@@ -17,7 +17,7 @@ Using this very simple Windows command line utility you to simulate and Internet
 
 When running Internet Simulator, it will:
 
-1. Create SSL certificates for the domains you are trying to simulate and saving it in your Trusted Root Certficate Authorities.
+1. Create SSL certificates for the domains you are trying to simulate and saving it in your Trusted Root Certficate Authorities
 2. Start a self hosted DNS server for simulation purposes. It does not rely on 'hosts' file so you can simulate every domain including Microsoft official domains
 3. Start a self hosted HTTP and HTTPS servers. HTTPS server will use the generated certificates.
 4. Simulate Microsoft Network Connectivity Status Indicator (NCSI) domains so Windows will show its status as Connected to the Internet
@@ -26,7 +26,7 @@ When running Internet Simulator, it will:
 When you stop it, it will:
 
 1. Stop DNS, HTTP and HTTPS self hosted services
-2. Delete the temporary generated certificates from your Personal Store and your Trusted Root CA. So no traces in your System.
+2. Delete the temporary generated certificates from your Personal Store and your Trusted Root Certficate Authorities. So no traces in your System.
 3. Restore the Network Interfaces configuration to their original settings
 
 
