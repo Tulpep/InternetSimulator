@@ -10,18 +10,18 @@ Using this very simple Windows command line utility you to simulate and Internet
 
 1. Phishing and DNS pharming demos
 2. Allow the use of software that require and active Internet connection
-3. Tricking windows icons to show you are connected
+3. Tricking Windows icons to show you are connected even when you are fully offline
 4. Installing software that use an online installer
 
 
 
-When running Internet Simulayor, it will:
+When running Internet Simulator, it will:
 
-1. Create SSL certificates for the domains you are trying to simulate and saving it in your trusted root CAs.
+1. Create SSL certificates for the domains you are trying to simulate and saving it in your Trusted Root Certficate Authorities.
 2. Start a self hosted DNS server for simulation purposes. It does not rely on 'hosts' file so you can simulate every domain including Microsoft official domains
-3. Start a self hosted HTTP and HTTPS servers with the generated certificates.
-4. Simulate Microsoft Network Connectivity Status Indicator (NCSI) domains so Windows will show its status and Connected to the Internet
-5. Backup your Network Cards DNS configuration and change it to `127.0.0.1`. This will start filtering the traffic throught the simulator
+3. Start a self hosted HTTP and HTTPS servers. HTTPS server will use the generated certificates.
+4. Simulate Microsoft Network Connectivity Status Indicator (NCSI) domains so Windows will show its status as Connected to the Internet
+5. Backup your Network Cards DNS configuration and change ther DNS to `127.0.0.1`. This will start filtering the traffic throught the simulator
 
 When you stop it, it will:
 
