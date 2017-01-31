@@ -2,7 +2,7 @@ Internet Simulator [![Build Status](https://ci.appveyor.com/api/projects/status/
 ===========
 
 ###A very simple utily to fully simulate an Internet Connection and make Windows think it is connected
-![Gui](Screenshots/ncsi.png)
+![NCSI](Screenshots/ncsi.png)
 
 ##[Download now](https://github.com/Tulpep/InternetSimulator/releases/latest)
 
