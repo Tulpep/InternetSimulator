@@ -27,6 +27,8 @@ InternetSimulator.exe -w “http://microsoft.com/file","C:\hello.txt" "https://m
 
 `-v` verbose parameters. By default is false. It shows additional information about every DNS resolution and Web page served.
 
+`-ncsi`  Network Connectivity Status Indicator (NCSI). By default is true. It make Windows icons to detect that you are connected to the Internet. If selected as false, Windows will show you are not connected to the Internet but still will simulated websites and files
+
 ## How it works
 
 When running Internet Simulator, it will:
