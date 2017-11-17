@@ -6,7 +6,7 @@ version: 1.0.{build}
 # Fix line endings in Windows. (runs before repo cloning)
 init:
   - git config --global core.autocrlf input
-  
+
 cache:
   - 'C:\projects\internetsimulator\Tulpep.InternetSimulator\packages'
 
@@ -30,11 +30,11 @@ environment:
   timestamp_url: 'http://timestamp.verisign.com/scripts/timstamp.dll'
   pfx_file: 'C:\projects\internetsimulator\Tulpep.pfx'
   pfx_password:
-    secure: UQSh4nfF0+NlaV7tLriphA==
-    
+    secure: LdcyoQhXm2P2QuFz/ogRYpACnJeZDyka/QBzMKJkKKE=
+
 before_build:
  - nuget restore Tulpep.InternetSimulator\Tulpep.InternetSimulator.sln
- 
+
 after_build:
   - cmd: '"%sign_tool%" sign /f "%pfx_file%" /p %pfx_password% /t %timestamp_url% "%artifact_path%"'
 
@@ -47,7 +47,7 @@ deploy:
   provider: GitHub
   description: ''
   auth_token:
-    secure: Q+20Xaui8ng5gVvoMIkb0g4F0oqMZFVOJo4SNRc+KVN91WkjLe5gTMkifCyDZTlE
+    secure: nGvHoLNrH4j9xxQF0wMmlLRlVkflplJhlPqn9VMcv1llIQi+PQYVKhpuOcMJqHnh
   artifact: InternetSimulator.exe
   draft: false
   prerelease: false
